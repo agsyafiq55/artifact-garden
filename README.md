@@ -7,10 +7,10 @@ A collection of interactive Claude artifacts about software engineering, plus a 
 ## Add things from your phone
 1. Open [claude.ai/code](https://claude.ai/code) and start a session on this repo.
 2. Run `/add-artifact explain <concept> interactively`.
-3. Reply with the terms you want to keep, such as `keep 1,3,4`.
+3. Claude teaches the concept in the artifact, writes the terms it explains into the glossary, and places both on the Backend roadmap.
 4. Claude runs the checks, commits to `main` and pushes. GitHub Pages redeploys in about a minute.
 
-To add a single term without an artifact, run `/add-term <term>`.
+Run `/add-artifact next` for the next subject on the roadmap, and `/add-artifact status` for progress.
 
 ## Local development
 ```bash
@@ -23,6 +23,7 @@ npm run check   # type check, artifact validator and build
 - `public/artifacts/*.html` holds the artifacts. Each one is a single self-contained file.
 - `src/content/artifacts/*.md` holds artifact metadata and notes.
 - `src/content/terms/*.md` holds the glossary, one term per file.
-- `.claude/skills/` holds the `add-artifact` and `add-term` workflows.
+- `src/content/tracks/backend.yaml` holds the Backend roadmap.
+- `.claude/skills/add-artifact/` holds the workflow and its writing rules.
 
-The browser stores flashcard progress. To move it between devices, open Review, then Progress & sync, and use export and import.
+The browser stores flashcard progress. To move it between devices, open Review, then Progress, and use export and import.

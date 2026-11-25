@@ -24,7 +24,6 @@ sections:
         terms: [status-code]
       - id: idempotency-retries
         title: "Idempotency and retries"
-        terms: [idempotency, idempotency-key, retry-with-backoff]
       - { id: pagination, title: "Pagination" }
       - { id: api-versioning, title: "API versioning", level: extra }
       - { id: graphql, title: "GraphQL", level: extra }
@@ -56,7 +55,6 @@ sections:
       - { id: caching-layers, title: "Where to cache" }
       - id: cache-invalidation
         title: "Cache invalidation"
-        terms: [cache-stampede]
       - { id: cdn, title: "CDNs" }
       - { id: rate-limiting, title: "Rate limiting" }
   - id: async
@@ -66,7 +64,6 @@ sections:
       - { id: background-jobs, title: "Background jobs" }
       - id: delivery-guarantees
         title: "Delivery guarantees"
-        terms: [at-least-once-delivery, exactly-once-semantics]
       - { id: back-pressure, title: "Back pressure", level: extra }
   - id: scaling
     title: "Scaling"
@@ -76,16 +73,12 @@ sections:
       - { id: replication, title: "Replication" }
       - id: sharding
         title: "Sharding"
-        terms: [sharding, hot-spot, rebalancing]
       - id: consistent-hashing
         title: "Consistent hashing"
-        terms: [consistent-hashing, virtual-nodes, modulo-hashing]
       - id: cap-theorem
         title: "CAP theorem"
-        terms: [cap-theorem, network-partition, availability]
       - id: consistency-models
         title: "Consistency models"
-        terms: [strong-consistency, eventual-consistency]
   - id: reliability
     title: "Staying up"
     nodes:

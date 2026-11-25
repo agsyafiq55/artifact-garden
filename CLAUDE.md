@@ -6,7 +6,7 @@ The owner mostly works from Claude Code on the web, on a phone. Keep replies sho
 
 ## Workflows
 - To add an artifact, use the `add-artifact` skill: `/add-artifact <what to explain>`.
-- To add or edit a single term, use the `add-term` skill: `/add-term <term>`.
+- Terms come only from artifacts. `/add-artifact` writes the terms each artifact explains. There is no command for adding a term on its own, and `npm run check` fails on a term that no artifact lists.
 - To pick the next subject from the Backend roadmap, run `/add-artifact next`. For progress, run `/add-artifact status`.
 
 ## Where things live

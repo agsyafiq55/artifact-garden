@@ -67,10 +67,17 @@ function checkSelfContained(artHtml) {
 }
 
 function checkReferences(artMd, terms) {
+  const explained = new Set();
   for (const slug of artMd) {
     const fm = readFlatFrontmatter(join(ART_MD, `${slug}.md`));
     if (!fm) { err(`src/content/artifacts/${slug}.md`, 'no frontmatter'); continue; }
-    for (const t of fm.terms ?? []) if (!terms.has(t)) err(`src/content/artifacts/${slug}.md`, `terms: "${t}" has no src/content/terms/${t}.md`);
+    for (const t of fm.terms ?? []) {
+      explained.add(t);
+      if (!terms.has(t)) err(`src/content/artifacts/${slug}.md`, `terms: "${t}" has no src/content/terms/${t}.md`);
+    }
+  }
+  for (const t of terms) {
+    if (!explained.has(t)) err(`src/content/terms/${t}.md`, 'no artifact lists this term; terms come only from the artifacts that explain them');
   }
   for (const slug of terms) {
     const fm = readFlatFrontmatter(join(TERM_MD, `${slug}.md`));
