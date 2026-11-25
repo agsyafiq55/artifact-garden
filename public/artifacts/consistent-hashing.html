@@ -6,38 +6,38 @@
 <title>Consistent hashing, hands on</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600&family=Zen+Kaku+Gothic+New:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f2ede3; --surface: #f7f3ea; --ink: #2a2723; --muted: #756e64; --line: #d8cfbf;
-    --accent: #8b5a3c; --ok: #5d6f4f; --bad: #9a4a3b; --warn: #9c7a3c;
+    --bg: #ffffff; --surface: #f3f3f1; --ink: #111111; --muted: #505050; --line: #dcdcdc;
+    --accent: #e2231a; --ok: #17783a; --bad: #e2231a; --warn: #a96d00;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #1c1b18; --surface: #22201d; --ink: #e4ddd0; --muted: #9b9488; --line: #38352f;
-      --accent: #c4916b; --ok: #95a586; --bad: #c98170; --warn: #c9a466; color-scheme: dark;
+      --bg: #0f0f0f; --surface: #181818; --ink: #f2f2f2; --muted: #a6a6a6; --line: #2e2e2e;
+      --accent: #ff3b2f; --ok: #4cc27a; --bad: #ff3b2f; --warn: #e0a83a; color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #1c1b18; --surface: #22201d; --ink: #e4ddd0; --muted: #9b9488; --line: #38352f;
-    --accent: #c4916b; --ok: #95a586; --bad: #c98170; --warn: #c9a466; color-scheme: dark;
+    --bg: #0f0f0f; --surface: #181818; --ink: #f2f2f2; --muted: #a6a6a6; --line: #2e2e2e;
+    --accent: #ff3b2f; --ok: #4cc27a; --bad: #ff3b2f; --warn: #e0a83a; color-scheme: dark;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.7 'Zen Kaku Gothic New', system-ui, sans-serif; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 'Inter Tight', system-ui, sans-serif; }
   main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
-  h1, h2 { font-family: 'Shippori Mincho', Georgia, serif; font-weight: 500; letter-spacing: 0.01em; }
+  h1, h2 { font-family: 'Inter Tight', Helvetica, Arial, sans-serif; font-weight: 700; letter-spacing: -0.03em; }
   h1 { font-size: 1.9rem; line-height: 1.15; margin: 0 0 8px; }
   h2 { font-size: 1.15rem; margin: 0 0 10px; }
   p.lede { color: var(--muted); margin: 0 0 20px; }
   code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .86em; }
-  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px 16px 12px 18px / 16px 10px 18px 12px; padding: 16px; }
-  button { font: 600 .95rem 'Zen Kaku Gothic New', sans-serif; min-height: 44px; padding: 10px 16px; border-radius: 3px 7px 4px 6px / 6px 3px 7px 4px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 0; padding: 16px; }
+  button { font: 600 .95rem 'Inter Tight', sans-serif; min-height: 44px; padding: 10px 16px; border-radius: 0; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
   button.primary { background: var(--accent); color: var(--surface); border-color: transparent; }
   h2 { font-size: 1.1rem; margin: 0 0 10px; }
   .label { font-size: .8rem; color: var(--muted); margin: 0 0 6px; }
   .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
-  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 3px 7px 4px 6px / 6px 3px 7px 4px; overflow: hidden; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 0; overflow: hidden; }
   .seg button { border: 0; border-radius: 0; background: none; color: var(--muted); font-weight: 500; }
   .seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
   .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -46,18 +46,18 @@
   .ring-wrap { display: grid; place-items: center; }
   svg.ring { width: 100%; max-width: 340px; height: auto; display: block; }
   .ring circle.track { fill: none; stroke: var(--line); stroke-width: 2; }
-  .ring text { font: 600 11px 'Zen Kaku Gothic New', sans-serif; fill: var(--ink); }
+  .ring text { font: 600 11px 'Inter Tight', sans-serif; fill: var(--ink); }
   .keys { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 6px; }
-  .key { font: 500 .72rem ui-monospace, SFMono-Regular, Menlo, monospace; text-align: center; padding: 6px 2px; border-radius: 8px; color: #f7f3ea; border: 2px solid transparent; transition: background .35s; }
+  .key { font: 500 .72rem ui-monospace, SFMono-Regular, Menlo, monospace; text-align: center; padding: 6px 2px; border-radius: 8px; color: #ffffff; border: 2px solid transparent; transition: background .35s; }
   .key.moved { border-color: var(--ink); box-shadow: 0 0 0 2px var(--bg) inset; }
   .bars { display: grid; gap: 6px; }
   .bar { display: grid; grid-template-columns: 22px 1fr 28px; align-items: center; gap: 8px; font-size: .82rem; }
   .bar .fill { height: 12px; border-radius: 6px; transition: width .35s; }
   .bar .track { background: var(--line); border-radius: 6px; }
   .bar span:last-child { text-align: right; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); }
-  .verdict { padding: 12px 14px; border-radius: 3px 7px 4px 6px / 6px 3px 7px 4px; border-left: 3px solid var(--line); background: var(--bg); font-size: .93rem; }
+  .verdict { padding: 12px 14px; border-radius: 0; border-left: 3px solid var(--line); background: var(--bg); font-size: .93rem; }
   .verdict.good { border-color: var(--ok); } .verdict.bad { border-color: var(--bad); }
-  .verdict b.big { font-size: 1.3rem; display: block; font-family: 'Shippori Mincho', Georgia, serif; }
+  .verdict b.big { font-size: 1.3rem; display: block; font-family: 'Inter Tight', Helvetica, Arial, sans-serif; }
   .vn { display: flex; align-items: center; gap: 10px; font-size: .88rem; }
   .vn input { flex: 1; accent-color: var(--accent); min-height: 44px; }
   .legend { font-size: .78rem; color: var(--muted); margin-top: 8px; }
@@ -117,10 +117,10 @@
 
   const $ = (id) => document.getElementById(id);
   const NAMES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
-  const HUES = [210, 28, 150, 330, 260, 190, 0, 85];
   const KEYS = Array.from({ length: 30 }, (_, i) => `user:${i + 1}`);
   const SPACE = 2 ** 32;
-  const color = (s) => `hsl(${HUES[NAMES.indexOf(s)]} 32% 44%)`;
+  const SERVER_COLORS = ['#e2231a', '#1f5fbf', '#17783a', '#d9631e', '#5a5a5a', '#0a7f8f', '#8a5a00', '#b0124f'];
+  const color = (s) => SERVER_COLORS[NAMES.indexOf(s)];
 
   function fnv1a32(str) {
     let h = 0x811c9dc5;

@@ -6,27 +6,31 @@ import { withBase } from '../lib/url';
 
 const artifacts = await getArtifacts();
 const terms = await getTerms();
-const recentTerms = [...terms].sort((a, b) => b.data.added.getTime() - a.data.added.getTime()).slice(0, 10);
+const recentTerms = [...terms].sort((a, b) => b.data.added.getTime() - a.data.added.getTime()).slice(0, 12);
 const ids = terms.map((t) => t.id);
 ---
 <Base>
   <section class="hero" data-enter>
-    <h1>Things I've learned,<br />one artifact at a time.</h1>
+    <h1>Things I've learned, one artifact at a time.</h1>
     <a class="due" href={withBase('/review')} id="review-cta" data-ids={JSON.stringify(ids)}>
       <span id="due-text">Review today's cards</span>
     </a>
   </section>
 
-  <h2>Latest</h2>
-  <ul class="list">
-    {artifacts.slice(0, 6).map((a) => <ArtifactCard artifact={a} />)}
-  </ul>
-  {artifacts.length > 6 && <p class="more"><a href={withBase('/artifacts')}>All {artifacts.length} artifacts</a></p>}
+  <section class="row">
+    <h2 class="row__label">Latest</h2>
+    <div class="row__body">
+      <ul class="list">{artifacts.slice(0, 6).map((a) => <ArtifactCard artifact={a} />)}</ul>
+      {artifacts.length > 6 && <p class="more"><a href={withBase('/artifacts')}>All {artifacts.length} artifacts</a></p>}
+    </div>
+  </section>
 
-  <h2>Words</h2>
-  <ul class="words">
-    {recentTerms.map((t) => <li><a href={withBase(`/terms/${t.id}`)}>{t.data.term}</a></li>)}
-  </ul>
+  <section class="row">
+    <h2 class="row__label">New terms</h2>
+    <div class="row__body">
+      <ul class="words">{recentTerms.map((t) => <li><a href={withBase(`/terms/${t.id}`)}>{t.data.term}</a></li>)}</ul>
+    </div>
+  </section>
 </Base>
 
 <script>
@@ -40,8 +44,8 @@ const ids = terms.map((t) => t.id);
 </script>
 
 <style>
-  .hero { padding: 8vh 0 4vh; }
-  .hero h1 { font-size: clamp(2.1rem, 8vw, 3.3rem); line-height: 1.35; margin-bottom: 1.4em; }
-  .due { font-family: var(--serif); font-size: 1.1rem; color: var(--accent); padding: 8px 0; display: inline-block; }
-  .more { margin-top: 18px; font-size: 0.95rem; }
+  .hero { padding: 6vh 0 10vh; }
+  .hero h1 { font-size: clamp(2.9rem, 11vw, 7rem); max-width: 11ch; margin-bottom: 40px; }
+  .due { font-size: 1.15rem; font-weight: 700; color: var(--accent); padding: 8px 0; display: inline-block; }
+  .more { margin-top: 20px; font-weight: 500; }
 </style>

@@ -8,7 +8,7 @@ const artifacts = await getArtifacts();
 const usedTopics = [...new Set(artifacts.map((a) => a.data.topic))] as Topic[];
 ---
 <Base title="Artifacts">
-  <div class="head">
+  <header class="page-head head-split">
     <h1>Artifacts</h1>
     {usedTopics.length > 1 && (
       <label><span class="visually-hidden">Topic</span>
@@ -18,9 +18,9 @@ const usedTopics = [...new Set(artifacts.map((a) => a.data.topic))] as Topic[];
         </select>
       </label>
     )}
-  </div>
+  </header>
 
-  <ul class="list" id="list">
+  <ul class="list body-list" id="list">
     {artifacts.map((a) => <ArtifactCard artifact={a} />)}
   </ul>
 </Base>
@@ -35,6 +35,6 @@ const usedTopics = [...new Set(artifacts.map((a) => a.data.topic))] as Topic[];
 </script>
 
 <style>
-  .head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
-  .head h1 { margin: 0; }
+  .head-split { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; flex-wrap: wrap; }
+  .body-list { margin-top: 28px; }
 </style>

@@ -23,40 +23,50 @@ const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 const inlineCode = (s: string) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
 ---
 <Base title={d.term} description={d.definition} indexed>
-  <h1>{d.term}</h1>
-  {d.aka.length > 0 && <p class="aka">also {d.aka.join(', ')}</p>}
+  <header class="page-head">
+    <h1>{d.term}</h1>
+    {d.aka.length > 0 && <p class="aka">also {d.aka.join(', ')}</p>}
+  </header>
 
-  <p class="definition">{d.definition}</p>
-  <p class="analogy">{d.analogy}</p>
-  <p class="example" set:html={inlineCode(d.example)} />
-
-  {hasBody && <section class="prose body"><Content /></section>}
+  <section class="row first">
+    <div class="row__body">
+      <p class="definition">{d.definition}</p>
+      <div class="pair">
+        <p class="analogy">{d.analogy}</p>
+        <p class="example" set:html={inlineCode(d.example)} />
+      </div>
+      {hasBody && <div class="prose body"><Content /></div>}
+    </div>
+  </section>
 
   {relatedIds.length > 0 && (
-    <section data-pagefind-ignore>
-      <h2>Related</h2>
-      <ul class="words">{relatedIds.map((id) => byId.get(id) && <li><a href={withBase(`/terms/${id}`)}>{byId.get(id)!.data.term}</a></li>)}</ul>
+    <section class="row" data-pagefind-ignore>
+      <h2 class="row__label">Related</h2>
+      <ul class="row__body words">{relatedIds.map((id) => byId.get(id) && <li><a href={withBase(`/terms/${id}`)}>{byId.get(id)!.data.term}</a></li>)}</ul>
     </section>
   )}
   {contrastIds.length > 0 && (
-    <section data-pagefind-ignore>
-      <h2>Often confused with</h2>
-      <ul class="words">{contrastIds.map((id) => byId.get(id) && <li><a class="contrast" href={withBase(`/terms/${id}`)}>{byId.get(id)!.data.term}</a></li>)}</ul>
+    <section class="row" data-pagefind-ignore>
+      <h2 class="row__label">Often confused with</h2>
+      <ul class="row__body words">{contrastIds.map((id) => byId.get(id) && <li><a class="contrast" href={withBase(`/terms/${id}`)}>{byId.get(id)!.data.term}</a></li>)}</ul>
     </section>
   )}
   {sources.length > 0 && (
-    <section data-pagefind-ignore>
-      <h2>Learned from</h2>
-      <ul class="words">{sources.map((a) => <li><a href={withBase(`/a/${a.id}`)}>{a.data.title}</a></li>)}</ul>
+    <section class="row" data-pagefind-ignore>
+      <h2 class="row__label">Learned from</h2>
+      <ul class="row__body words">{sources.map((a) => <li><a href={withBase(`/a/${a.id}`)}>{a.data.title}</a></li>)}</ul>
     </section>
   )}
 </Base>
 
 <style>
-  h1 { margin-bottom: 0.2em; }
-  .aka { color: var(--faint); font-style: italic; margin: 0; }
-  .definition { font: 500 clamp(1.3rem, 4.6vw, 1.65rem)/1.6 var(--serif); margin: 36px 0 32px; max-width: 34ch; }
-  .analogy { font: 400 1.08rem/1.8 var(--serif); font-style: italic; color: var(--muted); max-width: 48ch; padding-left: 18px; border-left: 1px solid var(--accent); }
-  .example { font-size: 0.98rem; max-width: 56ch; margin-top: 28px; }
+  .aka { color: var(--muted); font-size: 1.05rem; margin: 14px 0 0; }
+  .row.first { border-top: 0; margin-top: 8px; }
+  .definition { font-size: clamp(1.45rem, 4.4vw, 2.1rem); font-weight: 500; letter-spacing: -0.02em; line-height: 1.2; max-width: 26ch; margin: 0 0 36px; }
+  .pair { display: grid; gap: 20px; }
+  @media (min-width: 760px) { .pair { grid-template-columns: 1fr 1fr; gap: var(--col-gap); } }
+  .analogy, .example { margin: 0; font-size: 1rem; }
+  .analogy { padding-top: 10px; border-top: 2px solid var(--accent); }
+  .example { padding-top: 10px; border-top: 2px solid var(--rule); color: var(--muted); }
   .body { margin-top: 32px; }
 </style>

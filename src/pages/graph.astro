@@ -5,7 +5,7 @@ import { buildGraph } from '../lib/graph';
 const data = await buildGraph();
 ---
 <Base title="Graph">
-  <h1>How it connects</h1>
+  <header class="page-head"><h1>How it connects</h1></header>
 
   <div class="stage" id="stage">
     <svg id="graph" role="img" aria-label="Graph of terms and artifacts"></svg>
@@ -32,7 +32,8 @@ const data = await buildGraph();
     const t = document.documentElement.dataset.theme;
     return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
   };
-  const color = (hue: number) => (isDark() ? `hsl(${hue} 22% 66%)` : `hsl(${hue} 20% 42%)`);
+  const ink = () => (isDark() ? '#f2f2f2' : '#111111');
+  const red = () => (isDark() ? '#ff3b2f' : '#e2231a');
 
   let sim: ReturnType<typeof forceSimulation<N>> | null = null;
 
@@ -59,10 +60,10 @@ const data = await buildGraph();
     const node = root.append('g').attr('class', 'nodes').selectAll<SVGGElement, N>('g').data(nodes).join('g')
       .attr('class', (d) => `node ${d.kind}`).attr('tabindex', 0).attr('role', 'link').attr('aria-label', (d) => d.label);
     const r = (d: N) => (d.kind === 'artifact' ? 9 : 5 + Math.min(6, d.degree));
-    node.filter((d) => d.kind === 'term').append('circle').attr('r', r).attr('fill', (d) => color(d.hue));
+    node.filter((d) => d.kind === 'term').append('circle').attr('r', r).attr('fill', ink());
     node.filter((d) => d.kind === 'artifact').append('rect')
-      .attr('x', -9).attr('y', -9).attr('width', 18).attr('height', 18).attr('rx', 4)
-      .attr('fill', 'var(--bg)').attr('stroke', (d) => color(d.hue)).attr('stroke-width', 1.5);
+      .attr('x', -8).attr('y', -8).attr('width', 16).attr('height', 16)
+      .attr('fill', red());
     node.append('text').attr('class', 'label').attr('dy', (d) => r(d) + 14).attr('text-anchor', 'middle')
       .text((d) => (d.label.length > 28 ? d.label.slice(0, 26) + '…' : d.label));
 
@@ -114,16 +115,15 @@ const data = await buildGraph();
 </script>
 
 <style>
-  h1 { margin-bottom: 20px; }
-  .stage { position: relative; height: calc(100svh - 250px); min-height: 440px; overflow: hidden; margin: 0 calc(-1 * var(--gutter)); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-  @media (min-width: 760px) { .stage { margin: 0; height: calc(100vh - 260px); border: 1px solid var(--line); border-radius: var(--radius-soft); } }
+  .stage { position: relative; margin: 0 calc(-1 * var(--gutter)); height: calc(100svh - 260px); min-height: 440px; overflow: hidden; border-bottom: 2px solid var(--rule); }
+  @media (min-width: 760px) { .stage { margin: 0; height: calc(100vh - 280px); } }
   svg { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
   :global(.link) { stroke: var(--line); stroke-width: 1; transition: opacity 0.2s; }
-  :global(.link.related) { stroke: color-mix(in srgb, var(--muted) 45%, transparent); }
-  :global(.link.contrast) { stroke: var(--accent); stroke-dasharray: 3 4; opacity: 0.6; }
+  :global(.link.related) { stroke: var(--faint); }
+  :global(.link.contrast) { stroke: var(--accent); stroke-dasharray: 4 3; }
   :global(.node) { cursor: pointer; transition: opacity 0.2s; }
-  :global(.node .label) { font: 400 11px var(--sans); fill: var(--ink); paint-order: stroke; stroke: var(--bg); stroke-width: 3px; pointer-events: none; }
-  :global(.node.artifact .label) { font-family: var(--serif); font-size: 12px; fill: var(--muted); }
-  :global(.node.sel circle), :global(.node.sel rect) { stroke: var(--ink); stroke-width: 1.5; }
-  :global(.dim) { opacity: 0.15; }
+  :global(.node .label) { font: 500 11px var(--font); fill: var(--ink); paint-order: stroke; stroke: var(--bg); stroke-width: 3px; pointer-events: none; }
+  :global(.node.artifact .label) { font-weight: 700; fill: var(--accent); }
+  :global(.node.sel circle), :global(.node.sel rect) { stroke: var(--accent); stroke-width: 2; }
+  :global(.dim) { opacity: 0.12; }
 </style>
