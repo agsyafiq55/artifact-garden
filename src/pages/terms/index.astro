@@ -1,6 +1,5 @@
 ---
 import Base from '../../layouts/Base.astro';
-import TopicBadge from '../../components/TopicBadge.astro';
 import { getTerms } from '../../lib/content';
 import { TOPICS, type Topic } from '../../lib/topics';
 import { withBase } from '../../lib/url';
@@ -16,13 +15,11 @@ for (const t of terms) {
 }
 ---
 <Base title="Glossary">
-  <p class="eyebrow">Vocabulary</p>
   <h1>Glossary</h1>
-  <p class="lede">{terms.length} terms, A to Z. Each one links back to the artifact that taught it.</p>
 
   <div class="filters">
     <label class="grow"><span class="visually-hidden">Filter terms</span>
-      <input type="search" id="q" placeholder="Filter terms…" autocomplete="off" />
+      <input type="search" id="q" placeholder="Filter" autocomplete="off" />
     </label>
     <label><span class="visually-hidden">Topic</span>
       <select id="f-topic">
@@ -32,21 +29,16 @@ for (const t of terms) {
     </label>
   </div>
 
-  <nav class="letters" aria-label="Jump to letter">
-    {[...groups.keys()].map((l) => <a href={`#l-${l}`}>{l}</a>)}
-  </nav>
-
   {[...groups.entries()].map(([l, list]) => (
-    <section class="group" id={`l-${l}`}>
+    <section class="group">
       <h2 class="letter">{l}</h2>
-      <ul class="terms">
+      <ul class="list">
         {list.map((t) => (
           <li data-topic={t.data.topic} data-text={[t.data.term, ...t.data.aka, t.data.definition].join(' ').toLowerCase()}>
-            <a href={withBase(`/terms/${t.id}`)}>
-              <span class="name">{t.data.term}</span>
-              <span class="def muted">{t.data.definition}</span>
+            <a class="entry" href={withBase(`/terms/${t.id}`)}>
+              <span class="entry__title">{t.data.term}</span>
+              <span class="entry__text">{t.data.definition}</span>
             </a>
-            <TopicBadge topic={t.data.topic} link={false} />
           </li>
         ))}
       </ul>
@@ -58,7 +50,7 @@ for (const t of terms) {
 <script>
   const q = document.getElementById('q') as HTMLInputElement;
   const topic = document.getElementById('f-topic') as HTMLSelectElement;
-  const items = [...document.querySelectorAll<HTMLElement>('.terms li')];
+  const items = [...document.querySelectorAll<HTMLElement>('.group li')];
   function apply() {
     const s = q.value.trim().toLowerCase();
     let n = 0;
@@ -73,19 +65,8 @@ for (const t of terms) {
 </script>
 
 <style>
-  .filters { display: flex; gap: 8px; margin: 20px 0 12px; }
+  .filters { display: flex; gap: 20px; margin: 8px 0 16px; }
   .grow { flex: 1; }
   .grow input { width: 100%; }
-  .letters { display: flex; flex-wrap: wrap; gap: 2px; margin-bottom: 8px; }
-  .letters a { font: 500 0.85rem var(--mono); text-decoration: none; color: var(--muted); padding: 6px 8px; border-radius: 6px; }
-  .letters a:hover { background: var(--surface-2); color: var(--ink); }
-  .letter { font-size: 1.6rem; color: var(--accent); margin: 1.5rem 0 0.25rem; scroll-margin-top: 72px; }
-  .terms { list-style: none; margin: 0; padding: 0; }
-  .terms li { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
-  .terms li a { text-decoration: none; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-  .name { font: 600 1.12rem var(--serif); }
-  .terms li a:hover .name { color: var(--accent); }
-  .def { font-size: 0.9rem; }
-  .terms .topic { flex: none; margin-top: 3px; }
-  @media (max-width: 480px) { .terms .topic { display: none; } }
+  .letter { font-size: 1rem; color: var(--accent); margin: 2.6rem 0 0.4rem; }
 </style>

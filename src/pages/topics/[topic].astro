@@ -10,28 +10,19 @@ export function getStaticPaths() {
 }
 
 const topic = Astro.params.topic as Topic;
-const { label, hue } = TOPICS[topic];
+const { label } = TOPICS[topic];
 const artifacts = (await getArtifacts()).filter((a) => a.data.topic === topic);
 const terms = (await getTerms()).filter((t) => t.data.topic === topic);
 ---
 <Base title={label}>
-  <p class="eyebrow"><a href={withBase('/artifacts')}>Topic</a></p>
-  <h1 style={`--hue:${hue}`} class="title">{label}</h1>
-  <p class="lede">{artifacts.length} artifact{artifacts.length === 1 ? '' : 's'} · {terms.length} term{terms.length === 1 ? '' : 's'}</p>
+  <h1>{label}</h1>
 
-  {artifacts.length > 0 && (<>
-    <h2>Artifacts</h2>
-    <div class="grid two">{artifacts.map((a) => <ArtifactCard artifact={a} />)}</div>
-  </>)}
+  {artifacts.length > 0 && <ul class="list">{artifacts.map((a) => <ArtifactCard artifact={a} />)}</ul>}
 
   {terms.length > 0 && (<>
-    <h2>Terms</h2>
-    <ul class="chips">{terms.map((t) => <li><a class="chip" href={withBase(`/terms/${t.id}`)}>{t.data.term}</a></li>)}</ul>
+    <h2>Words</h2>
+    <ul class="words">{terms.map((t) => <li><a href={withBase(`/terms/${t.id}`)}>{t.data.term}</a></li>)}</ul>
   </>)}
 
   {artifacts.length + terms.length === 0 && <p class="muted">Nothing here yet.</p>}
 </Base>
-
-<style>
-  .title { text-decoration: underline; text-decoration-color: hsl(var(--hue) var(--topic-s) var(--topic-l)); text-decoration-thickness: 4px; text-underline-offset: 8px; }
-</style>

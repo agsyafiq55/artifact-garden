@@ -1,32 +1,14 @@
 ---
 import type { CollectionEntry } from 'astro:content';
-import TopicBadge from './TopicBadge.astro';
 import { withBase } from '../lib/url';
 
 interface Props { artifact: CollectionEntry<'artifacts'> }
 const { artifact } = Astro.props;
-const { title, summary, topic, created, terms, tags } = artifact.data;
-const date = created.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+const { title, summary, topic } = artifact.data;
 ---
-<article class="card artifact-card" data-topic={topic} data-tags={tags.join(' ')}>
-  <div class="meta">
-    <TopicBadge topic={topic} />
-    <span class="muted small">{date}</span>
-  </div>
-  <h3><a href={withBase(`/a/${artifact.id}`)} class="stretch">{title}</a></h3>
-  <p class="muted">{summary}</p>
-  <p class="small muted foot">{terms.length} term{terms.length === 1 ? '' : 's'}</p>
-</article>
-
-<style>
-  .artifact-card { position: relative; display: flex; flex-direction: column; gap: 6px; transition: border-color 0.15s; }
-  .artifact-card:hover { border-color: var(--muted); }
-  .meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-  h3 { font-size: 1.25rem; margin: 6px 0 0; }
-  h3 a { text-decoration: none; }
-  .stretch::after { content: ''; position: absolute; inset: 0; }
-  .artifact-card :global(.topic) { position: relative; z-index: 1; }
-  p { margin: 0; }
-  .small { font-size: 0.82rem; }
-  .foot { margin-top: auto; padding-top: 6px; }
-</style>
+<li class="artifact-card" data-topic={topic}>
+  <a class="entry" href={withBase(`/a/${artifact.id}`)}>
+    <span class="entry__title">{title}</span>
+    <span class="entry__text">{summary}</span>
+  </a>
+</li>

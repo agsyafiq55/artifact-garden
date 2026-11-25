@@ -6,32 +6,32 @@
 <title>Why retries need idempotency</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600&family=Zen+Kaku+Gothic+New:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #faf7f2; --surface: #ffffff; --ink: #1f1d1a; --muted: #6b655c; --line: #e7e1d6;
-    --accent: #b4532a; --ok: #2f7d4f; --bad: #b83a3a; --warn: #a0700f;
+    --bg: #f2ede3; --surface: #f7f3ea; --ink: #2a2723; --muted: #756e64; --line: #d8cfbf;
+    --accent: #8b5a3c; --ok: #5d6f4f; --bad: #9a4a3b; --warn: #9c7a3c;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #161513; --surface: #1f1d1a; --ink: #ece6dc; --muted: #a39b8e; --line: #34302a;
-      --accent: #e08a5f; --ok: #6cc08f; --bad: #e57373; --warn: #e0b24f; color-scheme: dark;
+      --bg: #1c1b18; --surface: #22201d; --ink: #e4ddd0; --muted: #9b9488; --line: #38352f;
+      --accent: #c4916b; --ok: #95a586; --bad: #c98170; --warn: #c9a466; color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #161513; --surface: #1f1d1a; --ink: #ece6dc; --muted: #a39b8e; --line: #34302a;
-    --accent: #e08a5f; --ok: #6cc08f; --bad: #e57373; --warn: #e0b24f; color-scheme: dark;
+    --bg: #1c1b18; --surface: #22201d; --ink: #e4ddd0; --muted: #9b9488; --line: #38352f;
+    --accent: #c4916b; --ok: #95a586; --bad: #c98170; --warn: #c9a466; color-scheme: dark;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 Inter, system-ui, sans-serif; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.7 'Zen Kaku Gothic New', system-ui, sans-serif; }
   main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
-  h1, h2 { font-family: Newsreader, Georgia, serif; font-weight: 600; letter-spacing: -0.01em; }
+  h1, h2 { font-family: 'Shippori Mincho', Georgia, serif; font-weight: 500; letter-spacing: 0.01em; }
   h1 { font-size: 1.9rem; line-height: 1.15; margin: 0 0 8px; }
   h2 { font-size: 1.2rem; margin: 0 0 10px; }
   p.lede { color: var(--muted); margin: 0 0 20px; }
-  code, .mono { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.86em; }
-  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.86em; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px 16px 12px 18px / 16px 10px 18px 12px; padding: 16px; }
   .controls { display: grid; gap: 12px; margin-bottom: 16px; }
   .toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .toggle small { display: block; color: var(--muted); font-size: 0.82rem; }
@@ -42,9 +42,9 @@
   .switch input:checked + span { background: var(--accent); }
   .switch input:checked + span::after { transform: translateX(18px); }
   .switch input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
-  button.pay { width: 100%; padding: 14px; font: 600 1rem Inter, sans-serif; border: 0; border-radius: 12px; background: var(--ink); color: var(--bg); cursor: pointer; }
+  button.pay { width: 100%; padding: 14px; font: 600 1rem 'Zen Kaku Gothic New', sans-serif; border: 0; border-radius: 3px 7px 4px 6px / 6px 3px 7px 4px; background: var(--ink); color: var(--bg); cursor: pointer; }
   button.pay:disabled { opacity: .5; cursor: progress; }
-  button.ghost { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 10px; padding: 8px 12px; font: 500 .85rem Inter, sans-serif; cursor: pointer; }
+  button.ghost { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 10px; padding: 8px 12px; font: 500 .85rem 'Zen Kaku Gothic New', sans-serif; cursor: pointer; }
   .grid { display: grid; gap: 16px; grid-template-columns: 1fr; margin-top: 16px; }
   @media (min-width: 640px) { .grid { grid-template-columns: 1fr 1fr; } }
   .log { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 320px; overflow: auto; }
@@ -53,7 +53,7 @@
   .ledger { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
   .ledger li { display: flex; justify-content: space-between; padding: 8px 10px; border-radius: 8px; background: var(--bg); font-size: .9rem; }
   .ledger li.dup { background: color-mix(in srgb, var(--bad) 14%, transparent); }
-  .verdict { margin-top: 16px; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line); font-weight: 500; }
+  .verdict { margin-top: 16px; padding: 14px 16px; border-radius: 3px 7px 4px 6px / 6px 3px 7px 4px; border: 1px solid var(--line); font-weight: 500; }
   .verdict.good { border-color: var(--ok); color: var(--ok); }
   .verdict.bad { border-color: var(--bad); color: var(--bad); }
   .empty { color: var(--muted); font-size: .88rem; }

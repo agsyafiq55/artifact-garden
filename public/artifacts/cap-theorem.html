@@ -6,53 +6,53 @@
 <title>CAP theorem, hands on</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600&family=Zen+Kaku+Gothic+New:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #faf7f2; --surface: #ffffff; --ink: #1f1d1a; --muted: #6b655c; --line: #e7e1d6;
-    --accent: #b4532a; --ok: #2f7d4f; --bad: #b83a3a; --warn: #a0700f;
+    --bg: #f2ede3; --surface: #f7f3ea; --ink: #2a2723; --muted: #756e64; --line: #d8cfbf;
+    --accent: #8b5a3c; --ok: #5d6f4f; --bad: #9a4a3b; --warn: #9c7a3c;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #161513; --surface: #1f1d1a; --ink: #ece6dc; --muted: #a39b8e; --line: #34302a;
-      --accent: #e08a5f; --ok: #6cc08f; --bad: #e57373; --warn: #e0b24f; color-scheme: dark;
+      --bg: #1c1b18; --surface: #22201d; --ink: #e4ddd0; --muted: #9b9488; --line: #38352f;
+      --accent: #c4916b; --ok: #95a586; --bad: #c98170; --warn: #c9a466; color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #161513; --surface: #1f1d1a; --ink: #ece6dc; --muted: #a39b8e; --line: #34302a;
-    --accent: #e08a5f; --ok: #6cc08f; --bad: #e57373; --warn: #e0b24f; color-scheme: dark;
+    --bg: #1c1b18; --surface: #22201d; --ink: #e4ddd0; --muted: #9b9488; --line: #38352f;
+    --accent: #c4916b; --ok: #95a586; --bad: #c98170; --warn: #c9a466; color-scheme: dark;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 Inter, system-ui, sans-serif; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.7 'Zen Kaku Gothic New', system-ui, sans-serif; }
   main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
-  h1, h2 { font-family: Newsreader, Georgia, serif; font-weight: 600; letter-spacing: -0.01em; }
+  h1, h2 { font-family: 'Shippori Mincho', Georgia, serif; font-weight: 500; letter-spacing: 0.01em; }
   h1 { font-size: 1.9rem; line-height: 1.15; margin: 0 0 8px; }
   h2 { font-size: 1.15rem; margin: 0 0 10px; }
   p.lede { color: var(--muted); margin: 0 0 20px; }
-  code, .mono { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .86em; }
-  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .86em; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px 16px 12px 18px / 16px 10px 18px 12px; padding: 16px; }
   .cluster { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; margin-bottom: 16px; }
-  .node { text-align: center; padding: 14px 8px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); }
+  .node { text-align: center; padding: 14px 8px; border-radius: 3px 7px 4px 6px / 6px 3px 7px 4px; border: 1px solid var(--line); background: var(--bg); }
   .node .name { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
-  .node .val { font: 600 2rem "JetBrains Mono", monospace; margin: 4px 0 0; transition: color .3s; }
+  .node .val { font: 600 2rem ui-monospace, SFMono-Regular, Menlo, monospace; margin: 4px 0 0; transition: color .3s; }
   .node.stale .val { color: var(--warn); }
   .link { width: 64px; height: 4px; border-radius: 2px; background: var(--ok); position: relative; transition: background .3s; }
   .link.cut { background: repeating-linear-gradient(90deg, var(--bad) 0 6px, transparent 6px 12px); }
   .link.cut::after { content: "✂"; position: absolute; left: 50%; top: -14px; transform: translateX(-50%); color: var(--bad); }
   .row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
   .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
-  .seg button { border: 0; background: none; padding: 8px 14px; font: 500 .9rem Inter, sans-serif; color: var(--muted); cursor: pointer; min-height: 40px; }
+  .seg button { border: 0; background: none; padding: 8px 14px; font: 500 .9rem 'Zen Kaku Gothic New', sans-serif; color: var(--muted); cursor: pointer; min-height: 40px; }
   .seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
   .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .actions button { padding: 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 600 .95rem Inter, sans-serif; cursor: pointer; }
-  .actions button.primary { background: var(--accent); color: #fff; border-color: transparent; }
+  .actions button { padding: 12px; border-radius: 3px 7px 4px 6px / 6px 3px 7px 4px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 600 .95rem 'Zen Kaku Gothic New', sans-serif; cursor: pointer; }
+  .actions button.primary { background: var(--accent); color: var(--surface); border-color: transparent; }
   .label { font-size: .8rem; color: var(--muted); margin: 0 0 6px; }
   .score { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 16px 0; }
-  .pill { padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); font-size: .9rem; }
+  .pill { padding: 10px 12px; border-radius: 3px 7px 4px 6px / 6px 3px 7px 4px; border: 1px solid var(--line); font-size: .9rem; }
   .pill b { display: block; font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
   .pill.good { border-color: var(--ok); } .pill.bad { border-color: var(--bad); }
-  .msg { padding: 12px 14px; border-radius: 12px; background: var(--bg); border-left: 3px solid var(--line); font-size: .92rem; min-height: 48px; }
+  .msg { padding: 12px 14px; border-radius: 3px 7px 4px 6px / 6px 3px 7px 4px; background: var(--bg); border-left: 3px solid var(--line); font-size: .92rem; min-height: 48px; }
   .msg.ok { border-color: var(--ok); } .msg.bad { border-color: var(--bad); } .msg.warn { border-color: var(--warn); }
 </style>
 </head>
