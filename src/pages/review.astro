@@ -1,7 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import { getTerms } from '../lib/content';
-import { TOPICS, type Topic } from '../lib/topics';
+import { getTracks } from '../lib/tracks';
 import { withBase } from '../lib/url';
 
 const terms = await getTerms();
@@ -11,46 +11,80 @@ const cards = terms.map((t) => ({
   definition: t.data.definition,
   analogy: t.data.analogy,
   example: t.data.example,
-  topic: t.data.topic,
   href: withBase(`/terms/${t.id}`),
 }));
-const usedTopics = [...new Set(terms.map((t) => t.data.topic))] as Topic[];
+
+const [track] = await getTracks();
+const onRoadmap = new Set<string>();
+const groups: { id: string; title: string; ids: string[] }[] = [];
+if (track) {
+  for (const s of track.data.sections) {
+    const ids = [...new Set(s.nodes.flatMap((n) => n.terms.map((r) => r.id)))];
+    ids.forEach((id) => onRoadmap.add(id));
+    if (ids.length) groups.push({ id: s.id, title: s.title, ids });
+  }
+}
+const loose = terms.map((t) => t.id).filter((id) => !onRoadmap.has(id));
+if (loose.length) groups.push({ id: 'unsorted', title: 'Not on the roadmap', ids: loose });
+groups.unshift({ id: 'all', title: 'Everything', ids: terms.map((t) => t.id) });
 ---
 <Base title="Review">
-  <div class="page-head head">
+  <header class="page-head head">
     <h1>Review</h1>
-    <label><span class="visually-hidden">Topic</span>
-      <select id="f-topic">
-        <option value="">All topics</option>
-        {usedTopics.map((t) => <option value={t}>{TOPICS[t].label}</option>)}
-      </select>
-    </label>
-  </div>
+  </header>
 
-  <p class="left" id="stats"></p>
+  <section id="picker" aria-labelledby="picker-title">
+    <h2 class="pick-title" id="picker-title">What do you want to revise?</h2>
+    <ol class="topics">
+      {groups.map((g, i) => (
+        <li>
+          <button class="topic" data-group={g.id}>
+            <span class="topic__num">{i === 0 ? '00' : String(i).padStart(2, '0')}</span>
+            <span class="topic__label">{g.title}</span>
+            <span class="topic__due" data-due-for={g.id}></span>
+          </button>
+        </li>
+      ))}
+    </ol>
+  </section>
 
-  <section id="deck" class="deck" aria-live="polite">
-    <article class="flash" id="card" hidden>
-      <h2 class="c-term" id="c-term"></h2>
-      <div id="c-back" hidden>
-        <p class="c-def" id="c-def"></p>
-        <p class="c-analogy" id="c-analogy"></p>
-        <p class="c-example" id="c-example"></p>
-        <a class="c-link" id="c-link" href="#">Open the term</a>
-      </div>
-    </article>
-
-    <button class="btn primary reveal" id="reveal" hidden>Show answer</button>
-    <div class="grades" id="grades" hidden>
-      <button class="btn g0" data-grade="Again">Again<small></small></button>
-      <button class="btn g1" data-grade="Hard">Hard<small></small></button>
-      <button class="btn g2" data-grade="Good">Good<small></small></button>
-      <button class="btn g3" data-grade="Easy">Easy<small></small></button>
+  <section id="session" hidden>
+    <div class="session-bar">
+      <button class="btn small" id="change">Change topic</button>
+      <p class="left"><span id="topic-name"></span> <span id="stats"></span></p>
     </div>
 
-    <div class="done" id="done" hidden>
-      <h2>Nothing left for today</h2>
-      <button class="btn small" id="more-new" hidden>Learn 5 more words</button>
+    <div class="deck" aria-live="polite">
+      <div class="flip" id="card" role="button" tabindex="0" aria-label="Flip the card" aria-pressed="false" hidden>
+        <div class="flip__inner">
+          <div class="face front">
+            <h2 class="c-term" id="c-term"></h2>
+          </div>
+          <div class="face back" aria-hidden="true">
+            <p class="c-term-small" id="c-term-back"></p>
+            <p class="c-def" id="c-def"></p>
+            <p class="c-analogy" id="c-analogy"></p>
+            <p class="c-example" id="c-example"></p>
+            <a class="c-link" id="c-link" href="#" tabindex="-1">Open the term</a>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn primary flip-btn" id="flip" hidden>Flip card</button>
+      <div class="grades" id="grades" hidden>
+        <button class="btn g0" data-grade="Again">Again<small></small></button>
+        <button class="btn g1" data-grade="Hard">Hard<small></small></button>
+        <button class="btn g2" data-grade="Good">Good<small></small></button>
+        <button class="btn g3" data-grade="Easy">Easy<small></small></button>
+      </div>
+
+      <div class="done" id="done" hidden>
+        <h2>Nothing left in this topic today</h2>
+        <div class="done-actions">
+          <button class="btn small" id="more-new" hidden>Learn 5 more words</button>
+          <button class="btn small" id="pick-again">Pick another topic</button>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -74,90 +108,133 @@ const usedTopics = [...new Set(terms.map((t) => t.data.topic))] as Topic[];
   </details>
 
   <script type="application/json" id="cards-data" set:html={JSON.stringify(cards)} />
+  <script type="application/json" id="groups-data" set:html={JSON.stringify(groups)} />
 </Base>
 
 <script>
   import { load, save, queue, grade, schedule, formatInterval, exportJson, mergeImport, reset, allowMoreNew, localDayKey, Grade, type Store } from '../lib/srs';
 
-  type Card = { id: string; term: string; definition: string; analogy: string; example: string; topic: string; href: string };
+  type Card = { id: string; term: string; definition: string; analogy: string; example: string; href: string };
+  type Group = { id: string; title: string; ids: string[] };
   const cards: Card[] = JSON.parse(document.getElementById('cards-data')!.textContent!);
+  const groups: Group[] = JSON.parse(document.getElementById('groups-data')!.textContent!);
   const byId = new Map(cards.map((c) => [c.id, c]));
   const gradeOf = (b: HTMLElement) => Grade[b.dataset.grade as keyof typeof Grade];
   const GRADE_KEYS: Record<string, Grade> = { '1': Grade.Again, '2': Grade.Hard, '3': Grade.Good, '4': Grade.Easy };
   const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
-  const topicSel = $<HTMLSelectElement>('f-topic');
 
   let store: Store = load();
+  let group: Group | null = null;
   let session: string[] = [];
   let current: string | null = null;
+  let flipped = false;
+  let seenBack = false;
 
   const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const inline = (s: string) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
-  const ids = () => cards.filter((c) => !topicSel.value || c.topic === topicSel.value).map((c) => c.id);
+
+  function dueCount(ids: string[]) {
+    const q = queue(store, ids);
+    return q.due.length + q.fresh.length;
+  }
+
+  function showPicker() {
+    group = null;
+    for (const g of groups) {
+      const n = dueCount(g.ids);
+      const el = document.querySelector<HTMLElement>(`[data-due-for="${g.id}"]`)!;
+      el.textContent = n ? `${n} due` : 'Nothing due';
+      el.classList.toggle('none', n === 0);
+    }
+    $('picker').hidden = false;
+    $('session').hidden = true;
+  }
+
+  function start(id: string) {
+    group = groups.find((g) => g.id === id) ?? null;
+    if (!group) return;
+    $('topic-name').textContent = group.title;
+    $('picker').hidden = true;
+    $('session').hidden = false;
+    build();
+    window.scrollTo({ top: 0 });
+  }
 
   function build() {
-    const q = queue(store, ids());
+    if (!group) return;
+    const q = queue(store, group.ids);
     session = [...q.due, ...q.fresh];
     next();
   }
 
+  function setFlipped(v: boolean) {
+    flipped = v;
+    const card = $('card');
+    card.classList.toggle('is-flipped', v);
+    card.setAttribute('aria-pressed', String(v));
+    card.querySelector('.front')!.setAttribute('aria-hidden', String(v));
+    card.querySelector('.back')!.setAttribute('aria-hidden', String(!v));
+    $<HTMLAnchorElement>('c-link').tabIndex = v ? 0 : -1;
+    $('flip').textContent = v ? 'Flip back' : 'Flip card';
+    if (v && !seenBack) { seenBack = true; $('grades').hidden = false; }
+  }
+
   function next() {
-    const q = queue(store, ids());
+    if (!group) return;
+    const q = queue(store, group.ids);
     current = session.shift() ?? null;
     const left = session.length + (current ? 1 : 0);
     $('stats').textContent = left ? `${left} left` : '';
     const has = !!current;
-    $('card').hidden = !has; $('reveal').hidden = !has; $('grades').hidden = true; $('c-back').hidden = true;
-    $('done').hidden = has;
+    $('card').hidden = !has; $('flip').hidden = !has; $('grades').hidden = true; $('done').hidden = has;
+    seenBack = false;
+    setFlipped(false);
     if (!current) {
-      const remaining = q.totalNew - q.fresh.length;
-      $('more-new').hidden = remaining <= 0;
+      $('more-new').hidden = q.totalNew - q.fresh.length <= 0;
       return;
     }
     const c = byId.get(current)!;
     $('c-term').textContent = c.term;
+    $('c-term-back').textContent = c.term;
     $('c-def').textContent = c.definition;
     $('c-analogy').textContent = c.analogy;
     $('c-example').innerHTML = inline(c.example);
     $<HTMLAnchorElement>('c-link').href = c.href;
-    const isNew = !store.cards[current];
-    $('card').classList.toggle('is-new', isNew);
+    $('card').classList.toggle('is-new', !store.cards[current]);
     document.querySelectorAll<HTMLButtonElement>('#grades button').forEach((b) => {
-      const g = gradeOf(b);
-      b.querySelector('small')!.textContent = formatInterval(schedule(store.cards[current!], g));
+      b.querySelector('small')!.textContent = formatInterval(schedule(store.cards[current!], gradeOf(b)));
     });
   }
 
-  function reveal() {
-    if (!current) return;
-    $('c-back').hidden = false; $('reveal').hidden = true; $('grades').hidden = false;
-    ($('grades').querySelector('.g2') as HTMLButtonElement).focus({ preventScroll: true });
-  }
-
   function answer(g: Grade) {
-    if (!current) return;
+    if (!current || !seenBack) return;
     grade(store, current, g);
     if (g === Grade.Again) session.push(current);
     next();
   }
 
-  $('reveal').addEventListener('click', reveal);
-  $('card').addEventListener('click', (e) => { if (!(e.target as HTMLElement).closest('a')) reveal(); });
+  document.querySelectorAll<HTMLButtonElement>('.topic').forEach((b) => b.addEventListener('click', () => start(b.dataset.group!)));
+  $('change').addEventListener('click', showPicker);
+  $('pick-again').addEventListener('click', showPicker);
+  $('flip').addEventListener('click', () => setFlipped(!flipped));
+  $('card').addEventListener('click', (e) => { if (!(e.target as HTMLElement).closest('a')) setFlipped(!flipped); });
   $('grades').addEventListener('click', (e) => {
     const b = (e.target as HTMLElement).closest('button'); if (b) answer(gradeOf(b));
   });
   document.addEventListener('keydown', (e) => {
-    if ((e.target as HTMLElement).matches('input, select, textarea') || document.querySelector('dialog[open]')) return;
-    if ((e.key === ' ' || e.key === 'Enter') && !$('reveal').hidden) { e.preventDefault(); reveal(); }
-    else if (!$('grades').hidden && e.key in GRADE_KEYS) answer(GRADE_KEYS[e.key]);
+    const el = e.target as HTMLElement;
+    if (el.matches?.('input, select, textarea, button, a') && el.id !== 'card') return;
+    if (document.querySelector('dialog[open]') || $('session').hidden || !current) return;
+    if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setFlipped(!flipped); }
+    else if (e.key in GRADE_KEYS) answer(GRADE_KEYS[e.key]);
   });
-  topicSel.addEventListener('change', build);
   $('more-new').addEventListener('click', () => { allowMoreNew(store, 5); build(); });
 
   const msg = (s: string) => { $('settings-msg').textContent = s; };
   const perDay = $<HTMLSelectElement>('per-day');
+  const refresh = () => (group ? build() : showPicker());
   perDay.value = String(store.newPerDay);
-  perDay.addEventListener('change', () => { store.newPerDay = Number(perDay.value); save(store); build(); });
+  perDay.addEventListener('change', () => { store.newPerDay = Number(perDay.value); save(store); refresh(); });
   $('export').addEventListener('click', () => {
     const blob = new Blob([exportJson(store)], { type: 'application/json' });
     const a = document.createElement('a');
@@ -170,38 +247,69 @@ const usedTopics = [...new Set(terms.map((t) => t.data.topic))] as Topic[];
     const f = (e.target as HTMLInputElement).files?.[0]; if (!f) return;
     try {
       const r = mergeImport(store, await f.text());
-      msg(`Imported: ${r.added} new, ${r.updated} updated.`); build();
+      msg(`Imported: ${r.added} new, ${r.updated} updated.`); refresh();
     } catch (err) { msg(`Import failed: ${(err as Error).message}`); }
     (e.target as HTMLInputElement).value = '';
   });
   $('reset').addEventListener('click', () => {
     if (!confirm('Erase all review progress on this device?')) return;
-    reset(); store = load(); perDay.value = String(store.newPerDay); build(); msg('Progress reset.');
+    reset(); store = load(); perDay.value = String(store.newPerDay); refresh(); msg('Progress reset.');
   });
 
-  build();
+  showPicker();
 </script>
 
 <style>
-  .head { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; flex-wrap: wrap; }
-  .left { min-height: 1.5em; font-size: 0.9rem; font-weight: 500; color: var(--muted); margin: 14px 0 28px; }
+  .pick-title { font-size: clamp(1.4rem, 5vw, 2rem); letter-spacing: -0.03em; margin: 28px 0 8px; }
+  .topics { list-style: none; margin: 0; padding: 0; }
+  .topics li + li { border-top: 1px solid var(--line); }
+  .topic {
+    width: 100%; display: grid; grid-template-columns: 2.6rem 1fr auto; align-items: baseline; gap: 12px;
+    padding: 16px 0; min-height: 56px; border: 0; background: none; color: var(--ink); text-align: left; cursor: pointer;
+    font: inherit; transition: transform var(--m-out) var(--ease);
+  }
+  .topic:hover { transform: translateY(-2px); transition-duration: var(--m-in); }
+  .topic:hover .topic__label { color: var(--accent); }
+  .topic:active { transform: scale(0.99); transition-duration: var(--m-press); }
+  .topic__num { font-weight: 700; color: var(--accent); }
+  .topic__label { font-size: clamp(1.2rem, 4.4vw, 1.6rem); font-weight: 700; letter-spacing: -0.025em; line-height: 1.2; transition: color var(--m-out) var(--ease); }
+  .topic__due { font-size: 0.88rem; font-weight: 700; color: var(--ink); white-space: nowrap; }
+  .topic__due.none { color: var(--faint); font-weight: 500; }
+
+  .session-bar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin: 20px 0 24px; }
+  .left { margin: 0; font-size: 0.95rem; }
+  #topic-name { font-weight: 700; }
+  #stats { color: var(--muted); }
+
   .deck { display: grid; gap: 16px; max-width: 640px; }
-  .flash { min-height: 300px; padding: 28px 0 8px; cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; border-top: 6px solid var(--ink); }
-  .flash.is-new { border-top-color: var(--accent); }
-  .c-term { font-size: clamp(2rem, 8vw, 3.2rem); letter-spacing: -0.035em; margin: 0 0 8px; }
-  #c-back { width: 100%; border-top: 1px solid var(--line); margin-top: 24px; padding-top: 24px; cursor: auto; }
-  .c-def { font-size: 1.3rem; font-weight: 500; letter-spacing: -0.015em; line-height: 1.3; margin-bottom: 22px; }
+  .flip { perspective: 1400px; cursor: pointer; outline-offset: 4px; }
+  .flip__inner { display: grid; transform-style: preserve-3d; transition: transform 520ms var(--ease); }
+  .flip.is-flipped .flip__inner { transform: rotateY(180deg); }
+  .face {
+    grid-area: 1 / 1; min-height: 320px; padding: 28px 24px;
+    background: var(--bg); border: 2px solid var(--rule); border-top-width: 8px;
+    backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    display: flex; flex-direction: column;
+  }
+  .flip.is-new .face { border-top-color: var(--accent); }
+  .front { justify-content: center; }
+  .back { transform: rotateY(180deg); }
+  .c-term { font-size: clamp(2rem, 8vw, 3.2rem); letter-spacing: -0.035em; margin: 0; }
+  .c-term-small { font-weight: 700; color: var(--muted); margin: 0 0 14px; }
+  .c-def { font-size: 1.25rem; font-weight: 500; letter-spacing: -0.015em; line-height: 1.3; margin-bottom: 20px; }
   .c-analogy { padding-top: 8px; border-top: 2px solid var(--accent); }
   .c-example { padding-top: 8px; border-top: 2px solid var(--rule); color: var(--muted); font-size: 0.95rem; }
-  .c-link { font-size: 0.92rem; font-weight: 500; padding: 8px 0; display: inline-block; }
-  .reveal { width: 100%; min-height: 56px; }
+  .c-link { font-size: 0.92rem; font-weight: 500; margin-top: auto; padding-top: 8px; min-height: 44px; display: inline-flex; align-items: center; width: fit-content; }
+  .flip-btn { width: 100%; min-height: 56px; }
   .grades { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
   .grades .btn { flex-direction: column; gap: 0; padding: 10px 4px; min-height: 64px; font-size: 0.95rem; }
   .grades .btn + .btn { border-left-width: 0; }
   .grades small { font: 400 0.72rem var(--mono); color: var(--faint); }
   .grades .btn:hover small { color: inherit; }
-  .done { padding: 40px 0; border-top: 6px solid var(--ink); }
-  .done h2 { font-size: clamp(1.8rem, 6vw, 2.6rem); letter-spacing: -0.035em; margin: 0 0 24px; }
+  .done { padding: 32px 0; border-top: 8px solid var(--ink); }
+  .done h2 { font-size: clamp(1.6rem, 6vw, 2.4rem); letter-spacing: -0.035em; margin: 0 0 24px; }
+  .done-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
   .settings { max-width: 640px; margin: 72px 0 0; padding-top: 14px; border-top: 2px solid var(--rule); }
   .settings summary { cursor: pointer; font-weight: 700; padding: 10px 0; }
   .settings p { font-size: 0.92rem; margin: 10px 0; }
@@ -209,4 +317,5 @@ const usedTopics = [...new Set(terms.map((t) => t.data.topic))] as Topic[];
   .settings-row label:not(.btn) { display: flex; gap: 10px; align-items: center; font-size: 0.92rem; }
   .danger { color: var(--bad); border-color: var(--bad); margin-left: auto; }
   .small { font-size: 0.85rem; }
+  @media (prefers-reduced-motion: reduce) { .flip__inner { transition: none; } }
 </style>
