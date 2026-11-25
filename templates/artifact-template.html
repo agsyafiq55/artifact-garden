@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITLE}}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf7f2; --surface: #ffffff; --ink: #1f1d1a; --muted: #6b655c; --line: #e7e1d6;
+    --accent: #b4532a; --ok: #2f7d4f; --bad: #b83a3a; --warn: #a0700f;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161513; --surface: #1f1d1a; --ink: #ece6dc; --muted: #a39b8e; --line: #34302a;
+      --accent: #e08a5f; --ok: #6cc08f; --bad: #e57373; --warn: #e0b24f; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #161513; --surface: #1f1d1a; --ink: #ece6dc; --muted: #a39b8e; --line: #34302a;
+    --accent: #e08a5f; --ok: #6cc08f; --bad: #e57373; --warn: #e0b24f; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 Inter, system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1, h2 { font-family: Newsreader, Georgia, serif; font-weight: 600; letter-spacing: -0.01em; }
+  h1 { font-size: 1.9rem; line-height: 1.15; margin: 0 0 8px; }
+  h2 { font-size: 1.15rem; margin: 0 0 10px; }
+  p.lede { color: var(--muted); margin: 0 0 20px; }
+  code, .mono { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .86em; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  button { font: 600 .95rem Inter, sans-serif; min-height: 44px; padding: 10px 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+  button.primary { background: var(--accent); color: #fff; border-color: transparent; }
+  /* --- artifact-specific styles below --- */
+</style>
+</head>
+<body>
+<main>
+  <h1>{{TITLE}}</h1>
+  <p class="lede">{{ONE-SENTENCE HOOK: what you will see / try}}</p>
+
+  <section class="card">
+    <!-- interactive part goes here -->
+  </section>
+</main>
+<script>
+  // Keep this: lets the site pass its light/dark choice into the iframe.
+  const t = new URLSearchParams(location.search).get('theme');
+  if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t;
+
+  // artifact logic below
+</script>
+</body>
+</html>

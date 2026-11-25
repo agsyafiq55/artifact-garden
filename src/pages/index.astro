@@ -1,0 +1,66 @@
+---
+import Base from '../layouts/Base.astro';
+import ArtifactCard from '../components/ArtifactCard.astro';
+import { getArtifacts, getTerms } from '../lib/content';
+import { u } from '../lib/url';
+
+const artifacts = await getArtifacts();
+const terms = await getTerms();
+const recentTerms = [...terms].sort((a, b) => b.data.added.getTime() - a.data.added.getTime()).slice(0, 8);
+const ids = terms.map((t) => t.id);
+---
+<Base>
+  <section class="hero">
+    <p class="eyebrow">A learning notebook</p>
+    <h1>Things I've learned,<br /><em>one artifact at a time.</em></h1>
+    <p class="lede">{artifacts.length} artifacts · {terms.length} terms in the glossary</p>
+  </section>
+
+  <a class="card review-cta" href={u('/review')} id="review-cta" data-ids={JSON.stringify(ids)}>
+    <div>
+      <p class="eyebrow">Today's review</p>
+      <p class="due"><span id="due-count">–</span> <span id="due-label">cards due</span></p>
+      <p class="muted sub" id="due-sub">Spaced repetition keeps the vocabulary fresh.</p>
+    </div>
+    <span class="btn accent" aria-hidden="true">Start →</span>
+  </a>
+
+  <h2>Latest artifacts</h2>
+  <div class="grid two">
+    {artifacts.slice(0, 6).map((a) => <ArtifactCard artifact={a} />)}
+  </div>
+  {artifacts.length > 6 && <p class="more"><a href={u('/artifacts')}>All {artifacts.length} artifacts →</a></p>}
+
+  <h2>Recently added terms</h2>
+  <ul class="chips">
+    {recentTerms.map((t) => <li><a class="chip" href={u(`/terms/${t.id}`)}>{t.data.term}</a></li>)}
+  </ul>
+  <p class="more"><a href={u('/terms')}>Full glossary →</a></p>
+</Base>
+
+<script>
+  import { load, queue } from '../lib/srs';
+  const el = document.getElementById('review-cta')!;
+  const ids: string[] = JSON.parse(el.dataset.ids!);
+  const s = load();
+  const q = queue(s, ids);
+  const n = q.due.length + q.fresh.length;
+  document.getElementById('due-count')!.textContent = String(n);
+  document.getElementById('due-label')!.textContent = n === 1 ? 'card due' : 'cards due';
+  const sub = document.getElementById('due-sub')!;
+  if (n === 0) sub.textContent = 'All caught up. Come back tomorrow.';
+  else sub.textContent = `${q.due.length} review${q.due.length === 1 ? '' : 's'} · ${q.fresh.length} new`;
+</script>
+
+<style>
+  .hero { margin: 8px 0 24px; }
+  .hero h1 em { font-style: italic; font-weight: 500; color: var(--accent); }
+  .hero .lede { margin: 0; font-size: 0.95rem; }
+  .review-cta { display: flex; align-items: center; justify-content: space-between; gap: 16px; text-decoration: none; border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+  .review-cta:hover { color: inherit; border-color: var(--accent); }
+  .review-cta .eyebrow { margin-bottom: 6px; }
+  .due { font: 600 1.7rem/1.1 var(--serif); margin: 0; }
+  .due #due-count { color: var(--accent); }
+  .sub { margin: 4px 0 0; font-size: 0.88rem; }
+  .more { margin-top: 12px; font-size: 0.92rem; }
+</style>

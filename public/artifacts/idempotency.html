@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why retries need idempotency</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf7f2; --surface: #ffffff; --ink: #1f1d1a; --muted: #6b655c; --line: #e7e1d6;
+    --accent: #b4532a; --ok: #2f7d4f; --bad: #b83a3a; --warn: #a0700f;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161513; --surface: #1f1d1a; --ink: #ece6dc; --muted: #a39b8e; --line: #34302a;
+      --accent: #e08a5f; --ok: #6cc08f; --bad: #e57373; --warn: #e0b24f; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #161513; --surface: #1f1d1a; --ink: #ece6dc; --muted: #a39b8e; --line: #34302a;
+    --accent: #e08a5f; --ok: #6cc08f; --bad: #e57373; --warn: #e0b24f; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 Inter, system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1, h2 { font-family: Newsreader, Georgia, serif; font-weight: 600; letter-spacing: -0.01em; }
+  h1 { font-size: 1.9rem; line-height: 1.15; margin: 0 0 8px; }
+  h2 { font-size: 1.2rem; margin: 0 0 10px; }
+  p.lede { color: var(--muted); margin: 0 0 20px; }
+  code, .mono { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.86em; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .controls { display: grid; gap: 12px; margin-bottom: 16px; }
+  .toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .toggle small { display: block; color: var(--muted); font-size: 0.82rem; }
+  .switch { position: relative; width: 46px; height: 28px; flex: none; }
+  .switch input { opacity: 0; width: 100%; height: 100%; margin: 0; position: absolute; cursor: pointer; z-index: 1; }
+  .switch span { position: absolute; inset: 0; background: var(--line); border-radius: 99px; transition: background .2s; }
+  .switch span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .2s; }
+  .switch input:checked + span { background: var(--accent); }
+  .switch input:checked + span::after { transform: translateX(18px); }
+  .switch input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button.pay { width: 100%; padding: 14px; font: 600 1rem Inter, sans-serif; border: 0; border-radius: 12px; background: var(--ink); color: var(--bg); cursor: pointer; }
+  button.pay:disabled { opacity: .5; cursor: progress; }
+  button.ghost { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 10px; padding: 8px 12px; font: 500 .85rem Inter, sans-serif; cursor: pointer; }
+  .grid { display: grid; gap: 16px; grid-template-columns: 1fr; margin-top: 16px; }
+  @media (min-width: 640px) { .grid { grid-template-columns: 1fr 1fr; } }
+  .log { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 320px; overflow: auto; }
+  .log li { font-size: .86rem; padding: 6px 8px; border-radius: 8px; background: var(--bg); border-left: 3px solid var(--line); }
+  .log li.ok { border-color: var(--ok); } .log li.bad { border-color: var(--bad); } .log li.warn { border-color: var(--warn); }
+  .ledger { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .ledger li { display: flex; justify-content: space-between; padding: 8px 10px; border-radius: 8px; background: var(--bg); font-size: .9rem; }
+  .ledger li.dup { background: color-mix(in srgb, var(--bad) 14%, transparent); }
+  .verdict { margin-top: 16px; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line); font-weight: 500; }
+  .verdict.good { border-color: var(--ok); color: var(--ok); }
+  .verdict.bad { border-color: var(--bad); color: var(--bad); }
+  .empty { color: var(--muted); font-size: .88rem; }
+  .head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Why retries need idempotency</h1>
+  <p class="lede">You tap <b>Pay RM&nbsp;25</b> once. The network is flaky, so the app can't tell if the server got the request, and it retries. How many times does the customer get charged?</p>
+
+  <section class="card controls" aria-label="Settings">
+    <label class="toggle">
+      <span>Flaky network<small>Each response has a 60% chance of getting lost (client times out)</small></span>
+      <span class="switch"><input type="checkbox" id="flaky" checked><span></span></span>
+    </label>
+    <label class="toggle">
+      <span>Send an idempotency key<small>Client attaches <code>Idempotency-Key</code>; server remembers keys it has processed</small></span>
+      <span class="switch"><input type="checkbox" id="idem"><span></span></span>
+    </label>
+    <button class="pay" id="pay">Pay RM 25</button>
+  </section>
+
+  <div class="grid">
+    <section class="card" aria-live="polite">
+      <div class="head"><h2>What happened</h2><button class="ghost" id="reset">Reset</button></div>
+      <ul class="log" id="log"><li class="empty" style="border:0;background:none">Tap Pay to start.</li></ul>
+    </section>
+    <section class="card">
+      <h2>Server ledger</h2>
+      <ul class="ledger" id="ledger"><li class="empty" style="background:none">No charges yet.</li></ul>
+    </section>
+  </div>
+  <div class="verdict" id="verdict" hidden></div>
+</main>
+<script>
+  const t = new URLSearchParams(location.search).get('theme');
+  if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t;
+
+  const $ = (id) => document.getElementById(id);
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const seenKeys = new Map();
+  let ledger = [];
+  let tapNo = 0;
+
+  function log(msg, cls = '') {
+    const ul = $('log');
+    if (ul.querySelector('.empty')) ul.innerHTML = '';
+    const li = document.createElement('li');
+    li.className = cls; li.innerHTML = msg; ul.appendChild(li); ul.scrollTop = ul.scrollHeight;
+  }
+  function renderLedger() {
+    const ul = $('ledger');
+    if (!ledger.length) { ul.innerHTML = '<li class="empty" style="background:none">No charges yet.</li>'; return; }
+    const perTap = {};
+    ul.innerHTML = ledger.map((c) => {
+      perTap[c.tap] = (perTap[c.tap] || 0) + 1;
+      const dup = perTap[c.tap] > 1;
+      return `<li class="${dup ? 'dup' : ''}"><span class="mono">charge #${c.id}${dup ? ' · duplicate' : ''}</span><span>RM 25</span></li>`;
+    }).join('');
+  }
+  function server(req) {
+    if (req.key && seenKeys.has(req.key)) {
+      log(`Server: key <code>${req.key}</code> already seen → returns the saved response, <b>no new charge</b>`, 'ok');
+      return seenKeys.get(req.key);
+    }
+    const charge = { id: ledger.length + 1, tap: req.tap };
+    ledger.push(charge); renderLedger();
+    const res = { status: 201, chargeId: charge.id };
+    if (req.key) seenKeys.set(req.key, res);
+    log(`Server: charged RM 25 (charge #${charge.id})`, ledger.filter((c) => c.tap === req.tap).length > 1 ? 'bad' : '');
+    return res;
+  }
+
+  $('pay').addEventListener('click', async () => {
+    const btn = $('pay'); btn.disabled = true; $('verdict').hidden = true;
+    const tap = ++tapNo;
+    const key = $('idem').checked ? 'pay_' + Math.random().toString(36).slice(2, 8) : null;
+    log(`<b>Tap ${tap}</b>: you press Pay once${key ? ` (key <code>${key}</code>)` : ''}`);
+    const delays = [0, 400, 800, 1600];
+    let done = false;
+    for (let attempt = 0; attempt < delays.length && !done; attempt++) {
+      if (attempt) { log(`Client: timed out → retry #${attempt} after ${delays[attempt]}ms backoff`, 'warn'); await sleep(Math.min(delays[attempt], 900)); }
+      log(`Client → POST /payments${attempt ? ' (retry)' : ''}`);
+      await sleep(350);
+      const res = server({ tap, key });
+      await sleep(250);
+      const lost = $('flaky').checked && attempt < delays.length - 1 && Math.random() < 0.6;
+      if (lost) { log('Network: response lost on the way back ✕', 'bad'); }
+      else { log(`Client: got 201 Created (charge #${res.chargeId}) ✓`, 'ok'); done = true; }
+    }
+    const n = ledger.filter((c) => c.tap === tap).length;
+    const v = $('verdict'); v.hidden = false;
+    v.className = 'verdict ' + (n === 1 ? 'good' : 'bad');
+    v.textContent = n === 1
+      ? `One tap → charged once. ${key ? 'The key turned every retry into a harmless replay.' : 'Lucky: no responses were lost this time. Try again.'}`
+      : `One tap → charged ${n} times. Each retry looked like a brand-new payment to the server. Turn on the idempotency key and try again.`;
+    btn.disabled = false;
+  });
+  $('reset').addEventListener('click', () => {
+    ledger = []; seenKeys.clear(); tapNo = 0; renderLedger();
+    $('log').innerHTML = '<li class="empty" style="border:0;background:none">Tap Pay to start.</li>';
+    $('verdict').hidden = true;
+  });
+</script>
+</body>
+</html>

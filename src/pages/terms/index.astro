@@ -1,0 +1,91 @@
+---
+import Base from '../../layouts/Base.astro';
+import TopicBadge from '../../components/TopicBadge.astro';
+import { getTerms } from '../../lib/content';
+import { TOPICS, type Topic } from '../../lib/topics';
+import { u } from '../../lib/url';
+
+const terms = await getTerms();
+const usedTopics = [...new Set(terms.map((t) => t.data.topic))] as Topic[];
+const letter = (s: string) => (/[a-z]/i.test(s[0]) ? s[0].toUpperCase() : '#');
+const groups = new Map<string, typeof terms>();
+for (const t of terms) {
+  const l = letter(t.data.term);
+  if (!groups.has(l)) groups.set(l, []);
+  groups.get(l)!.push(t);
+}
+---
+<Base title="Glossary">
+  <p class="eyebrow">Vocabulary</p>
+  <h1>Glossary</h1>
+  <p class="lede">{terms.length} terms, A–Z. Each one links back to the artifact that taught it.</p>
+
+  <div class="filters">
+    <label class="grow"><span class="visually-hidden">Filter terms</span>
+      <input type="search" id="q" placeholder="Filter terms…" autocomplete="off" />
+    </label>
+    <label><span class="visually-hidden">Topic</span>
+      <select id="f-topic">
+        <option value="">All topics</option>
+        {usedTopics.map((t) => <option value={t}>{TOPICS[t].label}</option>)}
+      </select>
+    </label>
+  </div>
+
+  <nav class="letters" aria-label="Jump to letter">
+    {[...groups.keys()].map((l) => <a href={`#l-${l}`}>{l}</a>)}
+  </nav>
+
+  {[...groups.entries()].map(([l, list]) => (
+    <section class="group" id={`l-${l}`}>
+      <h2 class="letter">{l}</h2>
+      <ul class="terms">
+        {list.map((t) => (
+          <li data-topic={t.data.topic} data-text={[t.data.term, ...t.data.aka, t.data.definition].join(' ').toLowerCase()}>
+            <a href={u(`/terms/${t.id}`)}>
+              <span class="name">{t.data.term}</span>
+              <span class="def muted">{t.data.definition}</span>
+            </a>
+            <TopicBadge topic={t.data.topic} link={false} />
+          </li>
+        ))}
+      </ul>
+    </section>
+  ))}
+  <p class="muted" id="none" hidden>No terms match.</p>
+</Base>
+
+<script>
+  const q = document.getElementById('q') as HTMLInputElement;
+  const topic = document.getElementById('f-topic') as HTMLSelectElement;
+  const items = [...document.querySelectorAll<HTMLElement>('.terms li')];
+  function apply() {
+    const s = q.value.trim().toLowerCase();
+    let n = 0;
+    for (const li of items) {
+      const ok = (!s || li.dataset.text!.includes(s)) && (!topic.value || li.dataset.topic === topic.value);
+      li.hidden = !ok; if (ok) n++;
+    }
+    document.querySelectorAll<HTMLElement>('.group').forEach((g) => { g.hidden = !g.querySelector('li:not([hidden])'); });
+    document.getElementById('none')!.hidden = n > 0;
+  }
+  q.addEventListener('input', apply); topic.addEventListener('change', apply);
+</script>
+
+<style>
+  .filters { display: flex; gap: 8px; margin: 20px 0 12px; }
+  .grow { flex: 1; }
+  .grow input { width: 100%; }
+  .letters { display: flex; flex-wrap: wrap; gap: 2px; margin-bottom: 8px; }
+  .letters a { font: 500 0.85rem var(--mono); text-decoration: none; color: var(--muted); padding: 6px 8px; border-radius: 6px; }
+  .letters a:hover { background: var(--surface-2); color: var(--ink); }
+  .letter { font-size: 1.6rem; color: var(--accent); margin: 1.5rem 0 0.25rem; scroll-margin-top: 72px; }
+  .terms { list-style: none; margin: 0; padding: 0; }
+  .terms li { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .terms li a { text-decoration: none; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .name { font: 600 1.12rem var(--serif); }
+  .terms li a:hover .name { color: var(--accent); }
+  .def { font-size: 0.9rem; }
+  .terms .topic { flex: none; margin-top: 3px; }
+  @media (max-width: 480px) { .terms .topic { display: none; } }
+</style>

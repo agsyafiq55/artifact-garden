@@ -1,0 +1,60 @@
+---
+import Base from '../../layouts/Base.astro';
+import ArtifactCard from '../../components/ArtifactCard.astro';
+import { getArtifacts } from '../../lib/content';
+import { TOPICS, type Topic } from '../../lib/topics';
+
+const artifacts = await getArtifacts();
+const usedTopics = [...new Set(artifacts.map((a) => a.data.topic))] as Topic[];
+const tags = [...new Set(artifacts.flatMap((a) => a.data.tags))].sort();
+---
+<Base title="Artifacts">
+  <p class="eyebrow">Collection</p>
+  <h1>Artifacts</h1>
+  <p class="lede">Every interactive explainer, newest first.</p>
+
+  <div class="filters">
+    <label><span class="visually-hidden">Topic</span>
+      <select id="f-topic">
+        <option value="">All topics</option>
+        {usedTopics.map((t) => <option value={t}>{TOPICS[t].label}</option>)}
+      </select>
+    </label>
+    <label><span class="visually-hidden">Tag</span>
+      <select id="f-tag">
+        <option value="">All tags</option>
+        {tags.map((t) => <option value={t}>#{t}</option>)}
+      </select>
+    </label>
+    <span class="muted count" id="count">{artifacts.length} shown</span>
+  </div>
+
+  <div class="grid two" id="list">
+    {artifacts.map((a) => <ArtifactCard artifact={a} />)}
+  </div>
+  <p class="muted" id="none" hidden>Nothing matches those filters.</p>
+</Base>
+
+<script>
+  const topic = document.getElementById('f-topic') as HTMLSelectElement;
+  const tag = document.getElementById('f-tag') as HTMLSelectElement;
+  const cards = [...document.querySelectorAll<HTMLElement>('#list .artifact-card')];
+  const params = new URLSearchParams(location.search);
+  if (params.get('tag')) tag.value = params.get('tag')!;
+  function apply() {
+    let n = 0;
+    for (const c of cards) {
+      const ok = (!topic.value || c.dataset.topic === topic.value) && (!tag.value || c.dataset.tags!.split(' ').includes(tag.value));
+      c.hidden = !ok; if (ok) n++;
+    }
+    document.getElementById('count')!.textContent = `${n} shown`;
+    document.getElementById('none')!.hidden = n > 0;
+  }
+  topic.addEventListener('change', apply); tag.addEventListener('change', apply);
+  apply();
+</script>
+
+<style>
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 20px 0 16px; }
+  .count { font-size: 0.85rem; margin-left: auto; }
+</style>

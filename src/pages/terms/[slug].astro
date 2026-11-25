@@ -1,0 +1,81 @@
+---
+import { render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import TopicBadge from '../../components/TopicBadge.astro';
+import { getTerms, getTermSources, backlinks, fmtDate, type Term } from '../../lib/content';
+import { u } from '../../lib/url';
+
+export async function getStaticPaths() {
+  const terms = await getTerms();
+  return terms.map((term) => ({ params: { slug: term.id }, props: { term } }));
+}
+
+const { term } = Astro.props as { term: Term };
+const d = term.data;
+const all = await getTerms();
+const byId = new Map(all.map((t) => [t.id, t]));
+const back = backlinks(all, term.id);
+const relatedIds = [...new Set([...d.related.map((r) => r.id), ...back.related])].filter((id) => id !== term.id);
+const contrastIds = [...new Set([...d.contrasts.map((r) => r.id), ...back.contrasts])].filter((id) => id !== term.id);
+const sources = (await getTermSources()).get(term.id) ?? [];
+const { Content } = await render(term);
+const hasBody = !!term.body?.trim();
+const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const inlineCode = (s: string) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
+---
+<Base title={d.term} description={d.definition} indexed>
+  <p class="eyebrow"><a href={u('/terms')}>Glossary</a></p>
+  <h1>{d.term}</h1>
+  {d.aka.length > 0 && <p class="aka muted">also: {d.aka.join(', ')}</p>}
+  <div class="meta" data-pagefind-ignore>
+    <TopicBadge topic={d.topic} />
+    {d.tags.map((t) => <span class="tag">{t}</span>)}
+  </div>
+
+  <p class="definition">{d.definition}</p>
+
+  <div class="grid two">
+    <section class="card">
+      <p class="eyebrow">Think of it like</p>
+      <p class="analogy">{d.analogy}</p>
+    </section>
+    <section class="card">
+      <p class="eyebrow">In context</p>
+      <p class="example" set:html={inlineCode(d.example)} />
+    </section>
+  </div>
+
+  {hasBody && <section class="prose body"><Content /></section>}
+
+  {(relatedIds.length > 0 || contrastIds.length > 0) && (
+    <section data-pagefind-ignore>
+      {relatedIds.length > 0 && (<>
+        <h2>Related</h2>
+        <ul class="chips">{relatedIds.map((id) => byId.get(id) && <li><a class="chip" href={u(`/terms/${id}`)}>{byId.get(id)!.data.term}</a></li>)}</ul>
+      </>)}
+      {contrastIds.length > 0 && (<>
+        <h2>Often confused with</h2>
+        <ul class="chips">{contrastIds.map((id) => byId.get(id) && <li><a class="chip contrast" href={u(`/terms/${id}`)}>{byId.get(id)!.data.term}</a></li>)}</ul>
+      </>)}
+    </section>
+  )}
+
+  <section data-pagefind-ignore>
+    <h2>Learned from</h2>
+    {sources.length > 0
+      ? <ul class="sources">{sources.map((a) => <li><a href={u(`/a/${a.id}`)}>{a.data.title}</a> <span class="muted">· {fmtDate(a.data.created)}</span></li>)}</ul>
+      : <p class="muted">Added directly to the glossary on {fmtDate(d.added)}.</p>}
+  </section>
+</Base>
+
+<style>
+  .aka { margin: -4px 0 8px; font-style: italic; }
+  .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 20px; }
+  .definition { font: 500 clamp(1.2rem, 4.2vw, 1.5rem)/1.4 var(--serif); margin: 0 0 24px; max-width: 40ch; padding-left: 14px; border-left: 3px solid var(--accent); }
+  .card p:last-child { margin: 0; }
+  .analogy { font: italic 500 1.08rem/1.5 var(--serif); }
+  .example { font-size: 0.95rem; }
+  .body { margin-top: 24px; }
+  .sources { padding-left: 1.1em; margin: 0; }
+  .sources li { margin-bottom: 6px; }
+</style>

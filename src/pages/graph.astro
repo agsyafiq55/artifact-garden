@@ -1,0 +1,158 @@
+---
+import Base from '../layouts/Base.astro';
+import { buildGraph } from '../lib/graph';
+
+const data = await buildGraph();
+---
+<Base title="Graph">
+  <div class="head">
+    <div>
+      <p class="eyebrow">Knowledge graph</p>
+      <h1>How it connects</h1>
+    </div>
+    <div class="toggles">
+      <label><input type="checkbox" id="show-artifacts" checked /> Artifacts</label>
+      <label><input type="checkbox" id="show-labels" checked /> Labels</label>
+    </div>
+  </div>
+  <p class="muted hint">Drag to pan, pinch or scroll to zoom. Tap a node once to highlight its neighbours, tap again to open it.</p>
+
+  <div class="stage card" id="stage">
+    <svg id="graph" role="img" aria-label="Graph of terms and artifacts"></svg>
+    <div class="legend">
+      <span><i class="dot"></i> term</span>
+      <span><i class="sq"></i> artifact</span>
+      <span><i class="ln"></i> related</span>
+      <span><i class="ln dash"></i> often confused</span>
+    </div>
+  </div>
+
+  <script type="application/json" id="graph-data" set:html={JSON.stringify(data)} />
+</Base>
+
+<script>
+  import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide, forceX, forceY, type SimulationNodeDatum, type SimulationLinkDatum } from 'd3-force';
+  import { select } from 'd3-selection';
+  import { zoom, zoomIdentity } from 'd3-zoom';
+  import { drag } from 'd3-drag';
+  import type { GNode, GLink } from '../lib/graph';
+
+  type N = GNode & SimulationNodeDatum;
+  type L = SimulationLinkDatum<N> & { kind: GLink['kind'] };
+
+  const raw = JSON.parse(document.getElementById('graph-data')!.textContent!) as { nodes: GNode[]; links: GLink[] };
+  const svgEl = document.getElementById('graph') as unknown as SVGSVGElement;
+  const stage = document.getElementById('stage')!;
+  const showArtifacts = document.getElementById('show-artifacts') as HTMLInputElement;
+  const showLabels = document.getElementById('show-labels') as HTMLInputElement;
+
+  const isDark = () => {
+    const t = document.documentElement.dataset.theme;
+    return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  };
+  const color = (hue: number) => (isDark() ? `hsl(${hue} 55% 68%)` : `hsl(${hue} 50% 42%)`);
+
+  let sim: ReturnType<typeof forceSimulation<N>> | null = null;
+  let selected: string | null = null;
+
+  function draw() {
+    sim?.stop();
+    const { width, height } = stage.getBoundingClientRect();
+    const nodes: N[] = raw.nodes.filter((n) => showArtifacts.checked || n.kind === 'term').map((n) => ({ ...n }));
+    const ids = new Set(nodes.map((n) => n.id));
+    const links: L[] = raw.links.filter((l) => ids.has(l.source) && ids.has(l.target)).map((l) => ({ ...l }));
+    const neighbours = new Map<string, Set<string>>();
+    for (const l of raw.links) {
+      if (!neighbours.has(l.source)) neighbours.set(l.source, new Set());
+      if (!neighbours.has(l.target)) neighbours.set(l.target, new Set());
+      neighbours.get(l.source)!.add(l.target); neighbours.get(l.target)!.add(l.source);
+    }
+
+    const svg = select(svgEl).attr('viewBox', `0 0 ${width} ${height}`);
+    svg.selectAll('*').remove();
+    const root = svg.append('g');
+
+    const link = root.append('g').attr('class', 'links').selectAll('line').data(links).join('line')
+      .attr('class', (d) => `link ${d.kind}`);
+
+    const node = root.append('g').attr('class', 'nodes').selectAll<SVGGElement, N>('g').data(nodes).join('g')
+      .attr('class', (d) => `node ${d.kind}`).attr('tabindex', 0).attr('role', 'link').attr('aria-label', (d) => d.label);
+    const r = (d: N) => (d.kind === 'artifact' ? 9 : 5 + Math.min(6, d.degree));
+    node.filter((d) => d.kind === 'term').append('circle').attr('r', r).attr('fill', (d) => color(d.hue));
+    node.filter((d) => d.kind === 'artifact').append('rect')
+      .attr('x', -9).attr('y', -9).attr('width', 18).attr('height', 18).attr('rx', 4)
+      .attr('fill', 'var(--surface)').attr('stroke', (d) => color(d.hue)).attr('stroke-width', 2.5);
+    node.append('text').attr('class', 'label').attr('dy', (d) => r(d) + 14).attr('text-anchor', 'middle')
+      .text((d) => (d.label.length > 28 ? d.label.slice(0, 26) + '…' : d.label));
+    root.classed('no-labels', !showLabels.checked);
+
+    function highlight(id: string | null) {
+      selected = id;
+      const nb = id ? neighbours.get(id) ?? new Set() : null;
+      node.classed('dim', (d) => !!nb && d.id !== id && !nb.has(d.id)).classed('sel', (d) => d.id === id);
+      link.classed('dim', (d) => !!id && (d.source as N).id !== id && (d.target as N).id !== id);
+    }
+    node.on('click', (e, d) => {
+      e.stopPropagation();
+      if (selected === d.id) location.href = d.href; else highlight(d.id);
+    });
+    node.on('keydown', (e: KeyboardEvent, d) => { if (e.key === 'Enter') location.href = d.href; });
+    svg.on('click', () => highlight(null));
+
+    sim = forceSimulation(nodes)
+      .force('link', forceLink<N, L>(links).id((d) => d.id).distance((l) => (l.kind === 'source' ? 95 : 120)).strength(0.5))
+      .force('charge', forceManyBody().strength(-520))
+      .force('center', forceCenter(width / 2, height / 2))
+      .force('x', forceX(width / 2).strength(0.03))
+      .force('y', forceY(height / 2).strength(0.03))
+      .force('collide', forceCollide<N>().radius((d) => r(d) + 30))
+      .on('tick', () => {
+        link.attr('x1', (d) => (d.source as N).x!).attr('y1', (d) => (d.source as N).y!)
+          .attr('x2', (d) => (d.target as N).x!).attr('y2', (d) => (d.target as N).y!);
+        node.attr('transform', (d) => `translate(${d.x},${d.y})`);
+      });
+
+    node.call(drag<SVGGElement, N>()
+      .on('start', (e, d) => { if (!e.active) sim!.alphaTarget(0.25).restart(); d.fx = d.x; d.fy = d.y; })
+      .on('drag', (e, d) => { d.fx = e.x; d.fy = e.y; })
+      .on('end', (e, d) => { if (!e.active) sim!.alphaTarget(0); d.fx = null; d.fy = null; }));
+
+    const z = zoom<SVGSVGElement, unknown>().scaleExtent([0.3, 4]).on('zoom', (e) => root.attr('transform', e.transform));
+    svg.call(z).call(z.transform, zoomIdentity);
+    svg.on('dblclick.zoom', null);
+  }
+
+  showArtifacts.addEventListener('change', draw);
+  showLabels.addEventListener('change', () => select(svgEl).select('g').classed('no-labels', !showLabels.checked));
+  window.addEventListener('ag:theme', draw);
+  let t: number | undefined;
+  window.addEventListener('resize', () => { clearTimeout(t); t = window.setTimeout(draw, 200); });
+  draw();
+</script>
+
+<style>
+  .head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+  .head h1 { margin: 0; }
+  .toggles { display: flex; gap: 14px; font-size: 0.88rem; color: var(--muted); }
+  .toggles label { display: flex; gap: 6px; align-items: center; }
+  .hint { font-size: 0.88rem; margin: 8px 0 14px; }
+  .stage { position: relative; padding: 0; height: calc(100svh - 280px); min-height: 420px; overflow: hidden; margin: 0 calc(-1 * var(--gutter)); border-radius: 0; border-left: 0; border-right: 0; }
+  @media (min-width: 760px) { .stage { margin: 0; border-radius: var(--radius); border: 1px solid var(--line); height: calc(100vh - 260px); } }
+  svg { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+  .legend { position: absolute; left: 12px; bottom: 10px; display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.74rem; color: var(--muted); background: color-mix(in srgb, var(--surface) 85%, transparent); padding: 6px 10px; border-radius: 8px; }
+  .legend span { display: flex; align-items: center; gap: 5px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); display: inline-block; }
+  .sq { width: 9px; height: 9px; border-radius: 2px; border: 2px solid var(--muted); display: inline-block; }
+  .ln { width: 16px; border-top: 1.5px solid var(--muted); display: inline-block; }
+  .ln.dash { border-top-style: dashed; }
+  :global(.link) { stroke: var(--line); stroke-width: 1.5; transition: opacity 0.2s; }
+  :global(.link.related) { stroke: color-mix(in srgb, var(--muted) 55%, transparent); }
+  :global(.link.contrast) { stroke: var(--accent); stroke-dasharray: 4 4; opacity: 0.7; }
+  :global(.link.source) { stroke: var(--line); }
+  :global(.node) { cursor: pointer; transition: opacity 0.2s; }
+  :global(.node .label) { font: 500 11px var(--sans); fill: var(--ink); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; pointer-events: none; }
+  :global(.node.artifact .label) { font-family: var(--serif); font-style: italic; font-size: 12px; }
+  :global(.node.sel circle), :global(.node.sel rect) { stroke: var(--ink); stroke-width: 2.5; }
+  :global(.dim) { opacity: 0.15; }
+  :global(.no-labels .label) { display: none; }
+</style>

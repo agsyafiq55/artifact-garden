@@ -1,0 +1,237 @@
+---
+import Base from '../layouts/Base.astro';
+import { getTerms } from '../lib/content';
+import { TOPICS, type Topic } from '../lib/topics';
+import { u } from '../lib/url';
+
+const terms = await getTerms();
+const cards = terms.map((t) => ({
+  id: t.id,
+  term: t.data.term,
+  definition: t.data.definition,
+  analogy: t.data.analogy,
+  example: t.data.example,
+  topic: t.data.topic,
+  topicLabel: TOPICS[t.data.topic].label,
+  hue: TOPICS[t.data.topic].hue,
+  href: u(`/terms/${t.id}`),
+}));
+const usedTopics = [...new Set(terms.map((t) => t.data.topic))] as Topic[];
+---
+<Base title="Review">
+  <div class="head">
+    <div>
+      <p class="eyebrow">Spaced repetition</p>
+      <h1>Review</h1>
+    </div>
+    <label><span class="visually-hidden">Topic</span>
+      <select id="f-topic">
+        <option value="">All topics</option>
+        {usedTopics.map((t) => <option value={t}>{TOPICS[t].label}</option>)}
+      </select>
+    </label>
+  </div>
+
+  <p class="stats muted" id="stats">Loading…</p>
+
+  <section id="deck" class="deck" aria-live="polite">
+    <article class="card flash" id="card" hidden>
+      <span class="topic" id="c-topic"></span>
+      <h2 class="c-term" id="c-term"></h2>
+      <div id="c-back" hidden>
+        <p class="c-def" id="c-def"></p>
+        <p class="eyebrow">Think of it like</p>
+        <p class="c-analogy" id="c-analogy"></p>
+        <p class="eyebrow">In context</p>
+        <p class="c-example" id="c-example"></p>
+        <a class="c-link" id="c-link" href="#">Open term page →</a>
+      </div>
+    </article>
+
+    <button class="btn primary reveal" id="reveal" hidden>Show answer</button>
+    <div class="grades" id="grades" hidden>
+      <button class="btn g0" data-g="0">Again<small></small></button>
+      <button class="btn g1" data-g="1">Hard<small></small></button>
+      <button class="btn g2" data-g="2">Good<small></small></button>
+      <button class="btn g3" data-g="3">Easy<small></small></button>
+    </div>
+
+    <div class="card done" id="done" hidden>
+      <h2>All caught up ✓</h2>
+      <p class="muted" id="done-msg">No cards due right now.</p>
+      <button class="btn small" id="more-new" hidden>Learn 5 more new terms</button>
+    </div>
+  </section>
+
+  <details class="settings">
+    <summary>Progress & sync</summary>
+    <p class="muted">Progress is saved in this browser only. To move it between phone and desktop, export a file on one and import it on the other. Imports merge, keeping whichever review is newer.</p>
+    <div class="row">
+      <button class="btn small" id="export">Export progress</button>
+      <label class="btn small" for="import">Import progress</label>
+      <input type="file" id="import" accept="application/json,.json" hidden />
+    </div>
+    <div class="row">
+      <label>New cards per day
+        <select id="per-day">
+          {[5, 10, 15, 20, 30].map((n) => <option value={n}>{n}</option>)}
+        </select>
+      </label>
+      <button class="btn small danger" id="reset">Reset progress</button>
+    </div>
+    <p class="muted small" id="settings-msg" role="status"></p>
+  </details>
+
+  <script type="application/json" id="cards-data" set:html={JSON.stringify(cards)} />
+</Base>
+
+<script>
+  import { load, save, queue, grade, schedule, formatInterval, exportJson, importJson, reset, type Grade, type Store } from '../lib/srs';
+
+  type Card = { id: string; term: string; definition: string; analogy: string; example: string; topic: string; topicLabel: string; hue: number; href: string };
+  const cards: Card[] = JSON.parse(document.getElementById('cards-data')!.textContent!);
+  const byId = new Map(cards.map((c) => [c.id, c]));
+  const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
+  const topicSel = $<HTMLSelectElement>('f-topic');
+
+  let store: Store = load();
+  let session: string[] = [];
+  let current: string | null = null;
+  let reviewedToday = 0;
+
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const inline = (s: string) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
+  const ids = () => cards.filter((c) => !topicSel.value || c.topic === topicSel.value).map((c) => c.id);
+
+  function build() {
+    const q = queue(store, ids());
+    session = [...q.due, ...q.fresh];
+    next();
+  }
+
+  function stats() {
+    const q = queue(store, ids());
+    const learned = ids().filter((id) => store.cards[id]).length;
+    $('stats').textContent = `${q.due.length} due · ${q.fresh.length} new today · ${learned}/${ids().length} learned${reviewedToday ? ` · ${reviewedToday} reviewed this session` : ''}`;
+    return q;
+  }
+
+  function next() {
+    const q = stats();
+    current = session.shift() ?? null;
+    const has = !!current;
+    $('card').hidden = !has; $('reveal').hidden = !has; $('grades').hidden = true; $('c-back').hidden = true;
+    $('done').hidden = has;
+    if (!current) {
+      const remaining = q.totalNew - q.fresh.length;
+      $('more-new').hidden = remaining <= 0;
+      $('done-msg').textContent = remaining > 0
+        ? `You've done today's reviews. ${remaining} new term${remaining === 1 ? '' : 's'} still waiting.`
+        : 'No cards due right now. New terms show up here as you add artifacts.';
+      return;
+    }
+    const c = byId.get(current)!;
+    const t = $('c-topic'); t.textContent = c.topicLabel; t.style.setProperty('--hue', String(c.hue));
+    $('c-term').textContent = c.term;
+    $('c-def').textContent = c.definition;
+    $('c-analogy').textContent = c.analogy;
+    $('c-example').innerHTML = inline(c.example);
+    $<HTMLAnchorElement>('c-link').href = c.href;
+    const isNew = !store.cards[current];
+    $('card').classList.toggle('is-new', isNew);
+    document.querySelectorAll<HTMLButtonElement>('#grades button').forEach((b) => {
+      const g = Number(b.dataset.g) as Grade;
+      b.querySelector('small')!.textContent = formatInterval(schedule(store.cards[current!], g));
+    });
+  }
+
+  function reveal() {
+    if (!current) return;
+    $('c-back').hidden = false; $('reveal').hidden = true; $('grades').hidden = false;
+    ($('grades').querySelector('.g2') as HTMLButtonElement).focus({ preventScroll: true });
+  }
+
+  function answer(g: Grade) {
+    if (!current) return;
+    grade(store, current, g);
+    reviewedToday++;
+    if (g === 0) session.push(current); // see it again before the session ends
+    next();
+  }
+
+  $('reveal').addEventListener('click', reveal);
+  $('card').addEventListener('click', (e) => { if (!(e.target as HTMLElement).closest('a')) reveal(); });
+  $('grades').addEventListener('click', (e) => {
+    const b = (e.target as HTMLElement).closest('button'); if (b) answer(Number(b.dataset.g) as Grade);
+  });
+  document.addEventListener('keydown', (e) => {
+    if ((e.target as HTMLElement).matches('input, select, textarea') || document.querySelector('dialog[open]')) return;
+    if ((e.key === ' ' || e.key === 'Enter') && !$('reveal').hidden) { e.preventDefault(); reveal(); }
+    else if (!$('grades').hidden && ['1', '2', '3', '4'].includes(e.key)) answer((Number(e.key) - 1) as Grade);
+  });
+  topicSel.addEventListener('change', build);
+  $('more-new').addEventListener('click', () => {
+    const k = new Date().toLocaleDateString('en-CA');
+    store.newIntroduced[k] = Math.max(0, (store.newIntroduced[k] ?? 0) - 5);
+    save(store); build();
+  });
+
+  // Settings
+  const msg = (s: string) => { $('settings-msg').textContent = s; };
+  const perDay = $<HTMLSelectElement>('per-day');
+  perDay.value = String(store.newPerDay);
+  perDay.addEventListener('change', () => { store.newPerDay = Number(perDay.value); save(store); build(); });
+  $('export').addEventListener('click', () => {
+    const blob = new Blob([exportJson(store)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `artifact-garden-progress-${new Date().toLocaleDateString('en-CA')}.json`;
+    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    msg('Progress exported.');
+  });
+  $<HTMLInputElement>('import').addEventListener('change', async (e) => {
+    const f = (e.target as HTMLInputElement).files?.[0]; if (!f) return;
+    try {
+      const r = importJson(store, await f.text());
+      msg(`Imported: ${r.added} new, ${r.updated} updated.`); build();
+    } catch (err) { msg(`Import failed: ${(err as Error).message}`); }
+    (e.target as HTMLInputElement).value = '';
+  });
+  $('reset').addEventListener('click', () => {
+    if (!confirm('Erase all review progress on this device?')) return;
+    reset(); store = load(); reviewedToday = 0; perDay.value = String(store.newPerDay); build(); msg('Progress reset.');
+  });
+
+  build();
+</script>
+
+<style>
+  .head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+  .head h1 { margin: 0; }
+  .stats { font-size: 0.88rem; margin: 8px 0 20px; }
+  .deck { display: grid; gap: 14px; max-width: 560px; margin: 0 auto; }
+  .flash { min-height: 260px; padding: 24px 22px; cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; }
+  .flash.is-new { border-top: 3px solid var(--accent); }
+  .c-term { font-size: clamp(1.7rem, 7vw, 2.3rem); margin: 18px 0 8px; }
+  #c-back { width: 100%; border-top: 1px solid var(--line); margin-top: 8px; padding-top: 16px; cursor: auto; }
+  .c-def { font: 500 1.15rem/1.45 var(--serif); margin-bottom: 18px; }
+  #c-back .eyebrow { margin: 0 0 4px; }
+  .c-analogy { font: italic 1.02rem/1.5 var(--serif); }
+  .c-example { font-size: 0.93rem; }
+  .c-link { font-size: 0.88rem; }
+  .reveal { width: 100%; min-height: 52px; }
+  .grades { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .grades .btn { flex-direction: column; gap: 2px; padding: 10px 4px; min-height: 58px; font-size: 0.9rem; }
+  .grades small { font: 400 0.75rem var(--mono); color: var(--muted); }
+  .g0 { border-color: color-mix(in srgb, var(--bad) 50%, var(--line)); }
+  .g2 { border-color: color-mix(in srgb, var(--ok) 50%, var(--line)); }
+  .done { text-align: center; padding: 32px 20px; }
+  .done h2 { margin: 0 0 8px; }
+  .settings { max-width: 560px; margin: 40px auto 0; border-top: 1px solid var(--line); padding-top: 16px; }
+  .settings summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
+  .settings p { font-size: 0.9rem; margin: 10px 0; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+  .row label:not(.btn) { display: flex; gap: 8px; align-items: center; font-size: 0.9rem; }
+  .danger { color: var(--bad); margin-left: auto; }
+  .small { font-size: 0.85rem; }
+</style>
