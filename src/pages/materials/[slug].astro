@@ -1,7 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
 import Crumbs from '../../components/Crumbs.astro';
-import { getTracks, nodeStatus, nextNodes, trackProgress, type Track } from '../../lib/tracks';
+import { getTracks, trackProgress, type Track } from '../../lib/tracks';
 import { withBase } from '../../lib/url';
 
 export async function getStaticPaths() {
@@ -11,11 +11,7 @@ export async function getStaticPaths() {
 
 const { track } = Astro.props as { track: Track };
 const { title, summary, sections } = track.data;
-const next = nextNodes(track, 1)[0];
 const { done, total } = trackProgress(track);
-const statusText = { 'has-artifact': 'Artifact', 'has-terms': 'Terms', 'not-started': '' } as const;
-const href = (n: (typeof sections)[number]['nodes'][number]) =>
-  n.artifacts[0] ? withBase(`/a/${n.artifacts[0].id}`) : n.terms[0] ? withBase(`/terms/${n.terms[0].id}`) : null;
 ---
 <Base title={`${title} roadmap`} description={summary}>
   <header class="page-head">
@@ -30,15 +26,13 @@ const href = (n: (typeof sections)[number]['nodes'][number]) =>
       <h2 class="row__label"><span class="num">{String(i + 1).padStart(2, '0')}</span>{s.title}</h2>
       <ol class="row__body nodes">
         {s.nodes.map((n) => {
-          const status = nodeStatus(n);
-          const link = href(n);
+          const artifact = n.artifacts[0];
           return (
-            <li
-              id={n.id}
-              class:list={['node', n.level, status, { next: next?.id === n.id }]}
-            >
-              {link ? <a class="node__title" href={link}>{n.title}</a> : <span class="node__title">{n.title}</span>}
-              <span class="node__status">{next?.id === n.id ? 'Next' : statusText[status]}</span>
+            <li id={n.id} class:list={['node', { soon: !artifact }]}>
+              {artifact
+                ? <a class="node__title" href={withBase(`/a/${artifact.id}`)}>{n.title}</a>
+                : <span class="node__title">{n.title}</span>}
+              {!artifact && <span class="node__status">Coming soon</span>}
             </li>
           );
         })}
@@ -58,13 +52,9 @@ const href = (n: (typeof sections)[number]['nodes'][number]) =>
   .nodes { list-style: none; margin: 0; padding: 0; }
   .node { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; min-height: 44px; padding: 10px 0; scroll-margin-top: 80px; }
   .node + .node { border-top: 1px solid var(--line); }
-  .node__title { font-size: 1.1rem; font-weight: 500; }
-  a.node__title { font-weight: 700; }
-  .node__status { flex: none; font-size: 0.82rem; font-weight: 700; color: var(--muted); }
-  .node.extra .node__title { color: var(--faint); font-weight: 400; }
-  .node.has-artifact .node__status { color: var(--ink); }
-  .node.next { padding-left: 12px; border-left: 4px solid var(--accent); }
-  .node.next .node__status { color: var(--accent); }
+  .node__title { font-size: 1.1rem; font-weight: 700; }
+  .node__status { flex: none; font-size: 0.82rem; font-weight: 500; color: var(--faint); }
+  .node.soon .node__title { color: var(--faint); font-weight: 400; }
   .node:target { background: var(--surface); }
   .credit { margin-top: 64px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.9rem; }
 </style>
