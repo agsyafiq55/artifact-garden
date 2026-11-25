@@ -13,15 +13,15 @@ const [track] = await getTracks();
 const next = track ? nextNodes(track, 1)[0] : undefined;
 ---
 <Base>
-  <section class="hero" data-enter>
-    <h1>Things I've learned, one artifact at a time.</h1>
+  <header class="intro">
+    <h1>A collection of Claude artifacts for learning software engineering concepts.</h1>
     <a class="due" href={withBase('/review')} id="review-cta" data-ids={JSON.stringify(ids)}>
       <span id="due-text">Review today's cards</span>
     </a>
     {track && next && (
       <a class="next" href={trackHref(track, next.id)}>Next on the {track.data.title} roadmap: <strong>{next.title}</strong></a>
     )}
-  </section>
+  </header>
 
   <section class="row">
     <h2 class="row__label">Latest</h2>
@@ -50,9 +50,9 @@ const next = track ? nextNodes(track, 1)[0] : undefined;
 </script>
 
 <style>
-  .hero { padding: 6vh 0 10vh; }
-  .hero h1 { font-size: clamp(2.9rem, 11vw, 7rem); max-width: 11ch; margin-bottom: 40px; }
-  .due { font-size: 1.15rem; font-weight: 700; color: var(--accent); padding: 8px 0; display: inline-block; }
-  .next { display: block; width: fit-content; margin-top: 4px; padding: 8px 0; font-size: 1.05rem; }
+  .intro { padding-bottom: 8px; }
+  .intro h1 { font-size: 1.25rem; font-weight: 500; letter-spacing: -0.01em; line-height: 1.4; max-width: 36ch; margin-bottom: 16px; }
+  .due { font-weight: 700; color: var(--accent); min-height: 44px; display: inline-flex; align-items: center; }
+  .next { display: block; width: fit-content; padding: 11px 0; line-height: 1.4; }
   .more { margin-top: 20px; font-weight: 500; }
 </style>

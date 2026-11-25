@@ -4,7 +4,7 @@ import { withBase } from '../lib/url';
 import { getTracks } from '../lib/tracks';
 
 interface Props { title?: string; description?: string; indexed?: boolean }
-const { title, description = 'A garden of Claude artifacts and the engineering vocabulary they taught me.', indexed = false } = Astro.props;
+const { title, description = 'A collection of Claude artifacts for learning software engineering concepts.', indexed = false } = Astro.props;
 const pageTitle = title ? `${title} · artifact garden` : 'artifact garden';
 const path = Astro.url.pathname.replace(import.meta.env.BASE_URL.replace(/\/$/, ''), '') || '/';
 
