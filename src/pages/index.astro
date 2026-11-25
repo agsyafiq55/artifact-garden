@@ -8,16 +8,12 @@ import { getTracks, nextNodes, trackHref } from '../lib/tracks';
 const artifacts = await getArtifacts();
 const terms = await getTerms();
 const recentTerms = [...terms].sort((a, b) => b.data.added.getTime() - a.data.added.getTime()).slice(0, 12);
-const ids = terms.map((t) => t.id);
 const [track] = await getTracks();
 const next = track ? nextNodes(track, 1)[0] : undefined;
 ---
 <Base>
   <header class="intro">
     <h1>A collection of Claude artifacts for learning software engineering concepts.</h1>
-    <a class="due" href={withBase('/review')} id="review-cta" data-ids={JSON.stringify(ids)}>
-      <span id="due-text">Review today's cards</span>
-    </a>
     {track && next && (
       <a class="next" href={trackHref(track, next.id)}>Next on the {track.data.title} roadmap: <strong>{next.title}</strong></a>
     )}
@@ -39,20 +35,10 @@ const next = track ? nextNodes(track, 1)[0] : undefined;
   </section>
 </Base>
 
-<script>
-  import { load, queue } from '../lib/srs';
-  const el = document.getElementById('review-cta')!;
-  const ids: string[] = JSON.parse(el.dataset.ids!);
-  const q = queue(load(), ids);
-  const n = q.due.length + q.fresh.length;
-  document.getElementById('due-text')!.textContent =
-    n === 0 ? 'Nothing to review today' : `${n} ${n === 1 ? 'card' : 'cards'} to review today`;
-</script>
 
 <style>
   .intro { padding-bottom: 8px; }
   .intro h1 { font-size: 1.25rem; font-weight: 500; letter-spacing: -0.01em; line-height: 1.4; max-width: 36ch; margin-bottom: 16px; }
-  .due { font-weight: 700; color: var(--accent); min-height: 44px; display: inline-flex; align-items: center; }
   .next { display: block; width: fit-content; padding: 11px 0; line-height: 1.4; }
   .more { margin-top: 20px; font-weight: 500; }
 </style>

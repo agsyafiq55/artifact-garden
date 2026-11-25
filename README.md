@@ -1,6 +1,6 @@
 # Artifact garden
 
-A collection of interactive Claude artifacts about software engineering, plus a glossary of the terms they taught me. The site has spaced-repetition flashcards and a knowledge graph.
+A collection of interactive Claude artifacts about software engineering, plus a glossary of the terms they taught me. The site has a Backend roadmap, flashcards by topic and a knowledge graph.
 
 **Live:** https://agsyafiq55.github.io/artifact-garden
 
@@ -26,4 +26,3 @@ npm run check   # type check, artifact validator and build
 - `src/content/tracks/backend.yaml` holds the Backend roadmap.
 - `.claude/skills/add-artifact/` holds the workflow and its writing rules.
 
-The browser stores flashcard progress. To move it between devices, open Review, then Progress, and use export and import.

@@ -34,8 +34,6 @@ const href = (n: (typeof sections)[number]['nodes'][number]) =>
             <li
               id={n.id}
               class:list={['node', n.level, status, { next: next?.id === n.id }]}
-              data-artifact={n.artifacts.length > 0 ? '1' : undefined}
-              data-terms={n.terms.map((t) => t.id).join(' ')}
             >
               {link ? <a class="node__title" href={link}>{n.title}</a> : <span class="node__title">{n.title}</span>}
               <span class="node__status">{next?.id === n.id ? 'Next' : statusText[status]}</span>
@@ -49,17 +47,6 @@ const href = (n: (typeof sections)[number]['nodes'][number]) =>
   <p class="credit">Written in our own words. For the original Backend roadmap, see <a href="https://roadmap.sh">roadmap.sh</a>.</p>
 </Base>
 
-<script>
-  import { load } from '../../lib/srs';
-  const cards = load().cards;
-  for (const li of document.querySelectorAll<HTMLElement>('.node[data-artifact]')) {
-    const terms = (li.dataset.terms ?? '').split(' ').filter(Boolean);
-    if (terms.length && terms.every((t) => (cards[t]?.interval ?? 0) >= 7)) {
-      li.classList.add('learned');
-      li.querySelector('.node__status')!.textContent = 'Learned';
-    }
-  }
-</script>
 
 <style>
   .lede { font-size: 1.2rem; line-height: 1.4; max-width: 44ch; margin: 20px 0 0; }
@@ -73,8 +60,7 @@ const href = (n: (typeof sections)[number]['nodes'][number]) =>
   a.node__title { font-weight: 700; }
   .node__status { flex: none; font-size: 0.82rem; font-weight: 700; color: var(--muted); }
   .node.extra .node__title { color: var(--faint); font-weight: 400; }
-  .node.has-artifact .node__status, .node.learned .node__status { color: var(--ink); }
-  .node.learned .node__title::before { content: ''; display: inline-block; width: 10px; height: 10px; background: var(--ink); margin-right: 10px; vertical-align: 1px; }
+  .node.has-artifact .node__status { color: var(--ink); }
   .node.next { padding-left: 12px; border-left: 4px solid var(--accent); }
   .node.next .node__status { color: var(--accent); }
   .node:target { background: var(--surface); }

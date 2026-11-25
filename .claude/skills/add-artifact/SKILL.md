@@ -116,7 +116,7 @@ Some Claude Code web sessions may only push to their own branch. If the push to 
 Keep the report to three lines:
 ```
 Published, live in about a minute: https://agsyafiq55.github.io/artifact-garden/a/<slug>
-Terms: <new term names>, plus <linked existing term names>. They're in today's review.
+Terms: <new term names>, plus <linked existing term names>. They're in Review under <section>.
 Roadmap: <section>, <node title>. Next: <next unfinished core node>.
 ```
 If the user then asks to drop or change a term, edit or delete its card and every list that names it, run the check, and commit as `fix: <what changed>`.

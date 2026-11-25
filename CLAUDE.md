@@ -1,6 +1,6 @@
 # artifact-garden
 
-A public Astro site at https://agsyafiq55.github.io/artifact-garden. It collects interactive Claude artifacts about software engineering concepts, plus a glossary of every term they taught. The site has spaced-repetition flashcards and a knowledge graph.
+A public Astro site at https://agsyafiq55.github.io/artifact-garden. It collects interactive Claude artifacts about software engineering concepts, plus a glossary of every term they taught. The site has a Backend roadmap, flashcards by topic and a knowledge graph.
 
 The owner mostly works from Claude Code on the web, on a phone. Keep replies short and easy to scan, and never ask them to edit files by hand.
 
