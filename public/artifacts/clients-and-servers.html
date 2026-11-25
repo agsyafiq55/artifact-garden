@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clients and servers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff; --surface: #f3f3f1; --ink: #111111; --muted: #505050; --line: #dcdcdc;
+    --accent: #e2231a; --ok: #17783a; --bad: #e2231a; --warn: #a96d00;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f0f0f; --surface: #181818; --ink: #f2f2f2; --muted: #a6a6a6; --line: #2e2e2e;
+      --accent: #ff3b2f; --ok: #4cc27a; --bad: #ff3b2f; --warn: #e0a83a; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f0f0f; --surface: #181818; --ink: #f2f2f2; --muted: #a6a6a6; --line: #2e2e2e;
+    --accent: #ff3b2f; --ok: #4cc27a; --bad: #ff3b2f; --warn: #e0a83a; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 'Inter Tight', system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1, h2 { font-family: 'Inter Tight', Helvetica, Arial, sans-serif; font-weight: 700; letter-spacing: -0.03em; }
+  h1 { font-size: 1.9rem; line-height: 1.15; margin: 0 0 8px; }
+  h2 { font-size: 1.15rem; margin: 0 0 10px; }
+  p.lede { color: var(--muted); margin: 0 0 20px; }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .86em; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 0; padding: 16px; }
+  button { font: 600 .95rem 'Inter Tight', sans-serif; min-height: 44px; padding: 10px 16px; border-radius: 0; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--surface); border-color: transparent; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button:not(:disabled):hover { border-color: var(--ink); }
+  button:not(:disabled):active { transform: scale(.98); }
+  h2 { font-size: 1.35rem; margin: 0 0 12px; letter-spacing: -0.025em; }
+  h3 { font-size: 1rem; margin: 0 0 6px; letter-spacing: -0.01em; }
+  p { margin: 0 0 12px; }
+  section.part { padding-top: 22px; margin-top: 34px; border-top: 2px solid var(--ink); }
+  .num { color: var(--accent); margin-right: 8px; }
+  .toc { display: flex; flex-wrap: wrap; gap: 0 18px; margin: 0 0 8px; padding: 0; list-style: none; }
+  .toc a { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); font-weight: 600; text-decoration: none; border-bottom: 2px solid transparent; }
+  .toc a:hover { border-bottom-color: var(--accent); }
+  .pair { display: grid; gap: 12px; margin: 16px 0; }
+  @media (min-width: 560px) { .pair { grid-template-columns: 1fr 1fr; } }
+  .role { border-top: 4px solid var(--ink); }
+  .role.client { border-top-color: var(--accent); }
+  .role ul { margin: 0; padding-left: 18px; }
+  .role li { margin-bottom: 4px; }
+  .analogy { border-left: 4px solid var(--accent); padding: 12px 14px; background: var(--surface); margin: 16px 0; }
+  .diagram { width: 100%; height: auto; display: block; margin: 8px 0 16px; }
+  .diagram text { font: 600 13px 'Inter Tight', sans-serif; fill: var(--ink); }
+  .diagram .soft { fill: var(--muted); font-weight: 500; }
+  .diagram .box { fill: var(--surface); stroke: var(--ink); stroke-width: 2; }
+  .diagram .req { stroke: var(--accent); stroke-width: 2.5; }
+  .diagram .res { stroke: var(--ink); stroke-width: 2.5; }
+  ol.steps { padding-left: 22px; margin: 0 0 16px; }
+  ol.steps li { margin-bottom: 10px; }
+  pre { margin: 6px 0 14px; padding: 12px 14px; background: var(--surface); border-left: 4px solid var(--line); overflow-x: auto; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre; }
+  pre.request { border-left-color: var(--accent); }
+  pre.response { border-left-color: var(--ink); }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0 14px; font-size: .92rem; }
+  th, td { text-align: left; padding: 8px 6px; border-top: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 700; white-space: nowrap; }
+  ol.todo { padding-left: 22px; margin: 0 0 16px; color: var(--muted); }
+  .clients { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .client .actions { display: grid; gap: 8px; }
+  .client button { width: 100%; text-align: left; }
+  .wire { position: relative; height: 72px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .lane { position: relative; }
+  .lane::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; border-left: 2px dashed var(--line); }
+  .dot { position: absolute; left: 50%; top: 0; width: 14px; height: 14px; margin-left: -7px; background: var(--accent); opacity: 0; }
+  .dot.down { animation: down 450ms ease-in forwards; }
+  .dot.up { background: var(--ink); animation: up 450ms ease-out forwards; }
+  .dot.lost { animation: lost 700ms ease-in forwards; }
+  @keyframes down { from { opacity: 1; transform: translateY(0); } to { opacity: 1; transform: translateY(58px); } }
+  @keyframes up { from { opacity: 1; transform: translateY(58px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lost { from { opacity: 1; transform: translateY(0); } 60% { opacity: 1; transform: translateY(40px); } to { opacity: 0; transform: translateY(40px); } }
+  @media (prefers-reduced-motion: reduce) { .dot { animation: none !important; } }
+  .server { border-top: 4px solid var(--ink); }
+  .server.offline { border-top-color: var(--bad); }
+  .server-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .server-head h3 { margin: 0; }
+  .switch { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: .9rem; cursor: pointer; }
+  .switch input { width: 20px; height: 20px; accent-color: var(--bad); }
+  .orders { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .orders li { padding: 8px 10px; background: var(--bg); font-size: .92rem; display: flex; justify-content: space-between; gap: 8px; }
+  .orders .empty { color: var(--muted); background: none; padding-left: 0; }
+  .log { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 340px; overflow: auto; }
+  .log li { padding: 8px 10px; background: var(--surface); border-left: 3px solid var(--line); font-size: .88rem; }
+  .log li.ok { border-color: var(--ok); }
+  .log li.warn { border-color: var(--warn); }
+  .log li.bad { border-color: var(--bad); }
+  .log .line { display: flex; justify-content: space-between; gap: 8px; }
+  .log .status { font-weight: 700; white-space: nowrap; }
+  .log .who, .log .body { color: var(--muted); }
+  .log .sub { margin-top: 6px; padding-left: 10px; border-left: 2px solid var(--line); color: var(--muted); }
+  .log .empty { border: 0; background: none; color: var(--muted); padding-left: 0; }
+  .verdict { margin: 16px 0; padding: 14px 16px; border-left: 4px solid var(--line); background: var(--surface); }
+  .verdict.good { border-color: var(--ok); }
+  .verdict.warn { border-color: var(--warn); }
+  .verdict.bad { border-color: var(--bad); }
+  .verdict b { display: block; font-size: 1.05rem; margin-bottom: 4px; }
+  ul.remember { padding-left: 20px; margin: 0 0 16px; }
+  ul.remember li { margin-bottom: 8px; }
+  details { border-top: 1px solid var(--line); }
+  details:last-of-type { border-bottom: 1px solid var(--line); }
+  summary { cursor: pointer; padding: 12px 0; min-height: 44px; font-weight: 600; list-style-position: outside; }
+  details p { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Clients and servers</h1>
+  <p class="lede">Almost every app you use is split into two programs. One runs on your device and asks for things. The other runs somewhere else and answers. This page explains how the two talk, then lets you run the conversation yourself.</p>
+
+  <ul class="toc">
+    <li><a href="#idea">The idea</a></li>
+    <li><a href="#cycle">One request, step by step</a></li>
+    <li><a href="#try">Try it</a></li>
+    <li><a href="#check">Check yourself</a></li>
+  </ul>
+
+  <section class="part" id="idea">
+    <h2><span class="num">1</span>The idea</h2>
+    <p>A <b>client</b> is a program that asks for something. A <b>server</b> is a program that waits for those requests, does the work, and sends back an answer. The browser on your laptop and the app on your phone are clients. The computer that stores your orders, messages or photos runs a server.</p>
+
+    <div class="pair">
+      <div class="card role client">
+        <h3>Client</h3>
+        <ul>
+          <li>Starts every conversation.</li>
+          <li>Shows results to a person.</li>
+          <li>Keeps little or no shared data.</li>
+          <li>Many clients run at the same time.</li>
+        </ul>
+      </div>
+      <div class="card role">
+        <h3>Server</h3>
+        <ul>
+          <li>Waits for requests and answers each one.</li>
+          <li>Holds the shared data and the rules.</li>
+          <li>Serves many clients at once.</li>
+          <li>Runs on a machine you never see.</li>
+        </ul>
+      </div>
+    </div>
+
+    <p>Client and server are <b>roles</b>, not kinds of machine. The same program can be a server to your phone and, a moment later, a client of another service.</p>
+
+    <div class="analogy">Think of a restaurant. You are the client and the kitchen is the server. You place an order, the kitchen cooks only when an order arrives, and the food comes back to your table. The kitchen keeps the stock. Your table doesn't.</div>
+  </section>
+
+  <section class="part" id="cycle">
+    <h2><span class="num">2</span>One request, step by step</h2>
+
+    <svg class="diagram" viewBox="0 0 340 150" role="img" aria-label="The client sends a request to the server, the server does the work, then sends a response back to the client">
+      <defs>
+        <marker id="head-req" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="var(--accent)"/></marker>
+        <marker id="head-res" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="var(--ink)"/></marker>
+      </defs>
+      <rect class="box" x="4" y="30" width="96" height="90"/>
+      <text x="52" y="80" text-anchor="middle">Client</text>
+      <rect class="box" x="240" y="30" width="96" height="90"/>
+      <text x="288" y="72" text-anchor="middle">Server</text>
+      <text class="soft" x="288" y="92" text-anchor="middle">2. does the work</text>
+      <line class="req" x1="104" y1="55" x2="234" y2="55" marker-end="url(#head-req)"/>
+      <text x="170" y="45" text-anchor="middle">1. request</text>
+      <line class="res" x1="236" y1="100" x2="106" y2="100" marker-end="url(#head-res)"/>
+      <text x="170" y="122" text-anchor="middle">3. response</text>
+    </svg>
+
+    <ol class="steps">
+      <li><b>The client sends a request.</b> It names a <b>method</b>, which says what to do, such as <code>GET</code> to read or <code>POST</code> to create. It also names a <b>path</b>, which says what to do it to, such as <code>/menu</code>.</li>
+      <li><b>The server does the work.</b> It checks the request, reads or changes its data, and may ask other services for help.</li>
+      <li><b>The server sends one response.</b> The response carries a <b>status code</b> that says how it went, and usually a body with the data.</li>
+      <li><b>The client uses the response.</b> It shows the menu, confirms the order, or shows an error.</li>
+    </ol>
+
+    <h3>What they look like</h3>
+    <p>This is a real HTTP request that places an order, and the server's reply.</p>
+    <pre class="request"><code>POST /orders HTTP/1.1
+Host: api.restaurant.example
+Content-Type: application/json
+
+{"dish": "Laksa"}</code></pre>
+    <pre class="response"><code>HTTP/1.1 201 Created
+Content-Type: application/json
+
+{"id": 1, "dish": "Laksa", "status": "received"}</code></pre>
+
+    <h3>Reading a status code</h3>
+    <table>
+      <tr><th>2xx</th><td>It worked. <code>200 OK</code> returns data, and <code>201 Created</code> confirms something new was stored.</td></tr>
+      <tr><th>4xx</th><td>The client asked for something wrong. <code>400 Bad Request</code> or <code>404 Not Found</code>. The server is fine.</td></tr>
+      <tr><th>5xx</th><td>The server failed while doing the work, as in <code>500 Internal Server Error</code>.</td></tr>
+      <tr><th>None</th><td>No response arrived before the client gave up. This is a timeout, and the client can't tell whether the server did the work.</td></tr>
+    </table>
+  </section>
+
+  <section class="part" id="try">
+    <h2><span class="num">3</span>Try it</h2>
+    <p>Two clients, a phone app and a browser, talk to one restaurant server. Every message you send appears in the log as a request and its response.</p>
+    <ol class="todo">
+      <li>Get the menu from the phone.</li>
+      <li>Place an order from each client, then list the orders.</li>
+      <li>Order a pizza, which isn't on the menu.</li>
+      <li>Switch the server off and send anything.</li>
+    </ol>
+
+    <div class="clients">
+      <section class="card client" data-client="Phone">
+        <h3>Phone app</h3>
+        <div class="actions">
+          <button data-action="menu">Get the menu</button>
+          <button data-action="order">Order laksa</button>
+          <button data-action="bad">Order a pizza</button>
+          <button data-action="list">List orders</button>
+        </div>
+      </section>
+      <section class="card client" data-client="Browser">
+        <h3>Browser</h3>
+        <div class="actions">
+          <button data-action="menu">Get the menu</button>
+          <button data-action="order">Order laksa</button>
+          <button data-action="bad">Order a pizza</button>
+          <button data-action="list">List orders</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="wire" aria-hidden="true">
+      <div class="lane"><span class="dot" id="dot-Phone"></span></div>
+      <div class="lane"><span class="dot" id="dot-Browser"></span></div>
+    </div>
+
+    <section class="card server" id="server">
+      <div class="server-head">
+        <h3>Restaurant server</h3>
+        <label class="switch"><input type="checkbox" id="offline"> Switch off</label>
+      </div>
+      <ul class="orders" id="orders"><li class="empty">No orders stored yet.</li></ul>
+    </section>
+
+    <div class="verdict" id="verdict" aria-live="polite"><b>Nothing sent yet</b>Tap a button on either client. The client always speaks first.</div>
+
+    <h3>Requests and responses</h3>
+    <ul class="log" id="log"><li class="empty">Each request and its response appears here.</li></ul>
+  </section>
+
+  <section class="part" id="check">
+    <h2><span class="num">4</span>Check yourself</h2>
+    <h3>What to remember</h3>
+    <ul class="remember">
+      <li>The client always starts the conversation. A server only answers.</li>
+      <li>Each request gets one response, and its status code says how it went.</li>
+      <li>The server holds the shared data, so every client sees the same orders.</li>
+      <li>Client and server are roles. A server becomes a client when it calls another service.</li>
+    </ul>
+
+    <details>
+      <summary>Your phone shows the order you placed on your laptop. Where does that order live?</summary>
+      <p>On the server. Neither client stores it. The phone asked the server for the list, and the server sent back every order it holds.</p>
+    </details>
+    <details>
+      <summary>A request comes back with 404. Whose mistake is it?</summary>
+      <p>Usually the client's. A 4xx code means the request asked for something the server can't find or won't accept. A 5xx code means the server itself failed.</p>
+    </details>
+    <details>
+      <summary>Can a server send a request?</summary>
+      <p>Yes. When the restaurant server asks a payment service to charge a card, it is the client in that conversation.</p>
+    </details>
+    <details>
+      <summary>An order request timed out. Did the server get the order?</summary>
+      <p>The client can't tell. The request may have been lost on the way, or the server may have stored the order and the response got lost. Retrying safely needs care, which the idempotency topic covers later on the roadmap.</p>
+    </details>
+  </section>
+</main>
+<script>
+  function applyThemeFromQuery() {
+    const theme = new URLSearchParams(location.search).get('theme');
+    if (theme === 'dark' || theme === 'light') document.documentElement.dataset.theme = theme;
+  }
+  applyThemeFromQuery();
+
+  const $ = (id) => document.getElementById(id);
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const MENU = ['Laksa', 'Nasi lemak', 'Roti canai'];
+  const REQUESTS = {
+    menu: { method: 'GET', path: '/menu', body: '' },
+    order: { method: 'POST', path: '/orders', body: '{"dish": "Laksa"}' },
+    bad: { method: 'POST', path: '/orders', body: '{"dish": "Pizza"}' },
+    list: { method: 'GET', path: '/orders', body: '' },
+  };
+  const state = { orders: [], nextId: 1, orderedBy: new Set() };
+
+  function handle(client, action) {
+    if (action === 'menu') return { code: '200 OK', body: `${MENU.join(', ')}` };
+    if (action === 'bad') return { code: '400 Bad Request', body: 'Pizza is not on the menu', kind: 'warn' };
+    if (action === 'order') {
+      const order = { id: state.nextId++, client };
+      state.orders.push(order);
+      state.orderedBy.add(client);
+      renderOrders();
+      return { code: '201 Created', body: `Order ${order.id} stored`, sub: 'The server became a client here. It sent POST /charges to the payment service and got 200 OK back before answering.' };
+    }
+    const n = state.orders.length;
+    return { code: '200 OK', body: n ? state.orders.map((o) => `order ${o.id} from the ${o.client.toLowerCase()}`).join(', ') : 'No orders yet' };
+  }
+
+  function renderOrders() {
+    const ul = $('orders');
+    if (!state.orders.length) { ul.innerHTML = '<li class="empty">No orders stored yet.</li>'; return; }
+    ul.innerHTML = state.orders.map((o) => `<li><span>Order ${o.id}, laksa</span><span class="who">from the ${o.client.toLowerCase()}</span></li>`).join('');
+  }
+
+  function log(client, action, res) {
+    const ul = $('log');
+    if (ul.querySelector('.empty')) ul.innerHTML = '';
+    const r = REQUESTS[action];
+    const li = document.createElement('li');
+    li.className = !res ? 'bad' : res.kind || 'ok';
+    li.innerHTML =
+      `<div class="line"><span><span class="who">${client}:</span> <code>${r.method} ${r.path}</code>${r.body ? ` <code>${r.body}</code>` : ''}</span>` +
+      `<span class="status">${res ? res.code : 'No response'}</span></div>` +
+      `<div class="body">${res ? res.body : 'The request timed out.'}</div>` +
+      (res && res.sub ? `<div class="sub">${res.sub}</div>` : '');
+    ul.prepend(li);
+  }
+
+  function say(title, text, cls) {
+    const v = $('verdict');
+    v.className = 'verdict ' + (cls || '');
+    v.innerHTML = `<b>${title}</b>${text}`;
+  }
+
+  function verdict(client, action, res) {
+    const who = `The ${client.toLowerCase()}`;
+    if (!res) return say('No response, so the client gave up',
+      `${who} still has its buttons and its code, but the menu and the orders live on the server. Without an answer, all it can show is an error. It also can't tell whether the server did the work.`, 'bad');
+    if (action === 'bad') return say('A 4xx code means the client asked for something wrong',
+      'The server is running fine. It checked the request, found that pizza is not on the menu, and said so with 400 Bad Request.', 'warn');
+    if (action === 'list' && state.orderedBy.size === 2) return say('Both clients see the same orders',
+      `${who} listed ${state.orders.length} orders, including ones the other client placed. Neither client stores them. The server holds one copy, and every client asks it.`, 'good');
+    if (action === 'order') return say('The server stored the order, and acted as a client too',
+      state.orderedBy.size === 1
+        ? 'To charge for the order, the server sent its own request to a payment service. Now place an order from the other client, then list the orders.'
+        : 'To charge for the order, the server sent its own request to a payment service. For that moment, the server was the client.', 'good');
+    say('The client asked, and the server answered',
+      `${who} sent GET /menu and got 200 OK with the menu. A server never starts the conversation. It waits for a request and sends one response back.`, 'good');
+  }
+
+  async function send(btn) {
+    const client = btn.closest('.client').dataset.client;
+    const action = btn.dataset.action;
+    const offline = $('offline').checked;
+    document.querySelectorAll('.client button').forEach((b) => (b.disabled = true));
+    const dot = $(`dot-${client}`);
+    dot.className = 'dot';
+    void dot.offsetWidth;
+    if (offline) {
+      dot.className = 'dot lost';
+      await sleep(900);
+      dot.className = 'dot';
+      log(client, action, null);
+      verdict(client, action, null);
+    } else {
+      dot.className = 'dot down';
+      await sleep(480);
+      const res = handle(client, action);
+      dot.className = 'dot';
+      void dot.offsetWidth;
+      dot.className = 'dot up';
+      await sleep(480);
+      dot.className = 'dot';
+      log(client, action, res);
+      verdict(client, action, res);
+    }
+    document.querySelectorAll('.client button').forEach((b) => (b.disabled = false));
+  }
+
+  document.querySelectorAll('.client button').forEach((b) => b.addEventListener('click', () => send(b)));
+  $('offline').addEventListener('change', (e) => {
+    $('server').classList.toggle('offline', e.target.checked);
+    say(e.target.checked ? 'The server is off' : 'The server is back',
+      e.target.checked ? 'Send any request from either client and see what happens.' : 'The orders are still there, because the server kept them.', e.target.checked ? 'bad' : 'good');
+  });
+</script>
+</body>
+</html>

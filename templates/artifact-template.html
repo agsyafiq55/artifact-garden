@@ -34,14 +34,101 @@
   .card { background: var(--surface); border: 1px solid var(--line); border-radius: 0; padding: 16px; }
   button { font: 600 .95rem 'Inter Tight', sans-serif; min-height: 44px; padding: 10px 16px; border-radius: 0; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
   button.primary { background: var(--accent); color: var(--surface); border-color: transparent; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button:not(:disabled):hover { border-color: var(--ink); }
+  button:not(:disabled):active { transform: scale(.98); }
+  h2 { font-size: 1.35rem; margin: 0 0 12px; letter-spacing: -0.025em; }
+  h3 { font-size: 1rem; margin: 0 0 6px; letter-spacing: -0.01em; }
+  p { margin: 0 0 12px; }
+  section.part { padding-top: 22px; margin-top: 34px; border-top: 2px solid var(--ink); }
+  .num { color: var(--accent); margin-right: 8px; }
+  .toc { display: flex; flex-wrap: wrap; gap: 0 18px; margin: 0 0 8px; padding: 0; list-style: none; }
+  .toc a { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); font-weight: 600; text-decoration: none; border-bottom: 2px solid transparent; }
+  .toc a:hover { border-bottom-color: var(--accent); }
+  .pair { display: grid; gap: 12px; margin: 16px 0; }
+  @media (min-width: 560px) { .pair { grid-template-columns: 1fr 1fr; } }
+  .role { border-top: 4px solid var(--ink); }
+  .role.client { border-top-color: var(--accent); }
+  .role ul { margin: 0; padding-left: 18px; }
+  .role li { margin-bottom: 4px; }
+  .analogy { border-left: 4px solid var(--accent); padding: 12px 14px; background: var(--surface); margin: 16px 0; }
+  .diagram { width: 100%; height: auto; display: block; margin: 8px 0 16px; }
+  .diagram text { font: 600 13px 'Inter Tight', sans-serif; fill: var(--ink); }
+  .diagram .soft { fill: var(--muted); font-weight: 500; }
+  .diagram .box { fill: var(--surface); stroke: var(--ink); stroke-width: 2; }
+  .diagram .req { stroke: var(--accent); stroke-width: 2.5; }
+  .diagram .res { stroke: var(--ink); stroke-width: 2.5; }
+  ol.steps { padding-left: 22px; margin: 0 0 16px; }
+  ol.steps li { margin-bottom: 10px; }
+  pre { margin: 6px 0 14px; padding: 12px 14px; background: var(--surface); border-left: 4px solid var(--line); overflow-x: auto; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre; }
+  pre.request { border-left-color: var(--accent); }
+  pre.response { border-left-color: var(--ink); }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0 14px; font-size: .92rem; }
+  th, td { text-align: left; padding: 8px 6px; border-top: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 700; white-space: nowrap; }
+  ol.todo { padding-left: 22px; margin: 0 0 16px; color: var(--muted); }
+  .verdict { margin: 16px 0; padding: 14px 16px; border-left: 4px solid var(--line); background: var(--surface); }
+  .verdict.good { border-color: var(--ok); }
+  .verdict.warn { border-color: var(--warn); }
+  .verdict.bad { border-color: var(--bad); }
+  .verdict b { display: block; font-size: 1.05rem; margin-bottom: 4px; }
+  ul.remember { padding-left: 20px; margin: 0 0 16px; }
+  ul.remember li { margin-bottom: 8px; }
+  details { border-top: 1px solid var(--line); }
+  details:last-of-type { border-bottom: 1px solid var(--line); }
+  summary { cursor: pointer; padding: 12px 0; min-height: 44px; font-weight: 600; list-style-position: outside; }
+  details p { color: var(--muted); }
 </style>
 </head>
 <body>
 <main>
   <h1>{{TITLE}}</h1>
-  <p class="lede">{{ONE-SENTENCE HOOK: what you will see / try}}</p>
+  <p class="lede">{{TWO OR THREE SENTENCES: what the concept is, where the reader meets it, and what this page will do}}</p>
 
-  <section class="card">
+  <ul class="toc">
+    <li><a href="#idea">The idea</a></li>
+    <li><a href="#how">How it works</a></li>
+    <li><a href="#try">Try it</a></li>
+    <li><a href="#check">Check yourself</a></li>
+  </ul>
+
+  <section class="part" id="idea">
+    <h2><span class="num">1</span>The idea</h2>
+    <p>{{THE CORE CONCEPTS IN PLAIN WORDS. Bold each key term where it is first defined.}}</p>
+    <div class="analogy">{{AN EVERYDAY ANALOGY}}</div>
+  </section>
+
+  <section class="part" id="how">
+    <h2><span class="num">2</span>How it works</h2>
+    <!-- a small inline SVG diagram (class="diagram") -->
+    <ol class="steps">
+      <li>{{STEP}}</li>
+    </ol>
+    <!-- a real example where one exists: <pre><code>...</code></pre> or a table -->
+  </section>
+
+  <section class="part" id="try">
+    <h2><span class="num">3</span>Try it</h2>
+    <p>{{ONE SENTENCE ON WHAT THE SIMULATION SHOWS}}</p>
+    <ol class="todo">
+      <li>{{THING TO TRY}}</li>
+    </ol>
+    <section class="card">
+      <!-- the interactive part -->
+    </section>
+    <div class="verdict" id="verdict" aria-live="polite"><b>{{STARTING TITLE}}</b>{{WHAT TO DO FIRST}}</div>
+  </section>
+
+  <section class="part" id="check">
+    <h2><span class="num">4</span>Check yourself</h2>
+    <h3>What to remember</h3>
+    <ul class="remember">
+      <li>{{KEY POINT}}</li>
+    </ul>
+    <details>
+      <summary>{{QUESTION}}</summary>
+      <p>{{ANSWER}}</p>
+    </details>
   </section>
 </main>
 <script>

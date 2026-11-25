@@ -5,7 +5,9 @@ sections:
   - id: foundations
     title: "How requests travel"
     nodes:
-      - { id: client-server, title: "Clients and servers" }
+      - id: client-server
+        title: "Clients and servers"
+        artifacts: [clients-and-servers]
       - { id: http, title: "HTTP requests and responses" }
       - { id: dns, title: "DNS" }
       - { id: tls, title: "TLS and HTTPS" }
@@ -17,7 +19,6 @@ sections:
       - { id: status-codes, title: "Status codes and error bodies" }
       - id: idempotency-retries
         title: "Idempotency and retries"
-        artifacts: [idempotency]
         terms: [idempotency, idempotency-key, retry-with-backoff]
       - { id: pagination, title: "Pagination" }
       - { id: api-versioning, title: "API versioning", level: extra }
@@ -73,11 +74,9 @@ sections:
         terms: [sharding, hot-spot, rebalancing]
       - id: consistent-hashing
         title: "Consistent hashing"
-        artifacts: [consistent-hashing]
         terms: [consistent-hashing, virtual-nodes, modulo-hashing]
       - id: cap-theorem
         title: "CAP theorem"
-        artifacts: [cap-theorem]
         terms: [cap-theorem, network-partition, availability]
       - id: consistency-models
         title: "Consistency models"

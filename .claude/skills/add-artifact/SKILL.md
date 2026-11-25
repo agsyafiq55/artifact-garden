@@ -33,9 +33,13 @@ Read `.claude/skills/add-artifact/WRITING.md` before you write any text. Every w
 - Choose a kebab-case `slug` that `public/artifacts/` doesn't already use.
 - Copy `templates/artifact-template.html` to `public/artifacts/<slug>.html` and build the artifact inside it.
   - If the user pasted their own HTML, adapt it into the template. Keep its behaviour, and replace its colors and fonts with the template's tokens.
-- A good artifact here meets these rules:
-  - **The reader acts first.** They toggle, step, drag or break something and watch the concept happen. Static text comes second.
-  - The page opens with a one-sentence hook, then the interactive part, then a short verdict that responds to what the reader did.
+- **Teach first, then let them try.** The reader may know nothing about the concept. Never open with the demo. Every artifact has these four parts, in this order, using the template's sections and contents list:
+  1. **The idea.** The intro says in 2 or 3 sentences what the concept is and where the reader meets it. Then explain the core concepts in plain words, and bold each key term where you first define it. Give one everyday analogy.
+  2. **How it works.** Walk through the mechanism step by step with a small inline SVG diagram. Show a real example wherever one exists: a request and response, a query, a config, a log line, a table of cases.
+  3. **Try it.** The interactive part, introduced by one sentence and a short numbered list of things to try. Its messages respond to what the reader did and name the concept at work, using the terms from parts 1 and 2.
+  4. **Check yourself.** 3 to 5 points to remember, and 3 or 4 questions with tap-to-reveal answers in `<details>`. At least one question applies the idea to a new situation instead of repeating the page.
+- A good artifact also meets these rules:
+  - Every new term in the interactive part was already explained above it.
   - It works at 375px wide. It uses one column and tap targets of at least 44px. It has no hover-only interactions and no sideways scroll.
   - It supports light and dark mode through the CSS variables, and it keeps the template's `applyThemeFromQuery()` function and call.
   - External files come only from cdnjs.cloudflare.com, cdn.jsdelivr.net, unpkg.com, esm.sh and Google Fonts, pinned to exact versions. Prefer vanilla JS.
