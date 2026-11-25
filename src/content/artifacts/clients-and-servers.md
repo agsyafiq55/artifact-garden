@@ -4,7 +4,7 @@ summary: "Learn what clients and servers do, read a real request and response, t
 topic: backend
 tags: [http, api-design, client-server]
 created: 2026-11-25
-terms: []
+terms: [client, server, request-response-model, http-method, status-code, timeout, single-source-of-truth]
 prompt: "Create an artifact to study clients and servers, explaining the core concepts before the example."
 ---
 

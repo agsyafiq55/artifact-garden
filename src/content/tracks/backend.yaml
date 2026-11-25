@@ -8,7 +8,10 @@ sections:
       - id: client-server
         title: "Clients and servers"
         artifacts: [clients-and-servers]
-      - { id: http, title: "HTTP requests and responses" }
+        terms: [client, server, request-response-model, single-source-of-truth]
+      - id: http
+        title: "HTTP requests and responses"
+        terms: [http-method]
       - { id: dns, title: "DNS" }
       - { id: tls, title: "TLS and HTTPS" }
       - { id: tcp-udp, title: "TCP and UDP", level: extra }
@@ -16,7 +19,9 @@ sections:
     title: "APIs"
     nodes:
       - { id: rest, title: "REST" }
-      - { id: status-codes, title: "Status codes and error bodies" }
+      - id: status-codes
+        title: "Status codes and error bodies"
+        terms: [status-code]
       - id: idempotency-retries
         title: "Idempotency and retries"
         terms: [idempotency, idempotency-key, retry-with-backoff]
@@ -84,7 +89,9 @@ sections:
   - id: reliability
     title: "Staying up"
     nodes:
-      - { id: timeouts, title: "Timeouts" }
+      - id: timeouts
+        title: "Timeouts"
+        terms: [timeout]
       - { id: circuit-breakers, title: "Circuit breakers" }
       - { id: health-checks, title: "Health checks" }
       - { id: graceful-degradation, title: "Graceful degradation", level: extra }
