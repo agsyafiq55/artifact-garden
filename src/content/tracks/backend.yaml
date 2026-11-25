@@ -2,8 +2,8 @@ title: "Backend"
 summary: "What a backend developer works with, from a single request to a system that stays up under load."
 order: 1
 sections:
-  - id: foundations
-    title: "How requests travel"
+  - id: internet
+    title: "Internet basics"
     nodes:
       - id: client-server
         title: "Clients and servers"
@@ -25,12 +25,13 @@ sections:
       - id: idempotency-retries
         title: "Idempotency and retries"
       - { id: pagination, title: "Pagination" }
+      - { id: rate-limiting, title: "Rate limiting" }
       - { id: api-versioning, title: "API versioning", level: extra }
       - { id: graphql, title: "GraphQL", level: extra }
       - { id: grpc, title: "gRPC", level: extra }
       - { id: webhooks, title: "Webhooks", level: extra }
-  - id: data
-    title: "Data"
+  - id: databases
+    title: "Databases"
     nodes:
       - { id: relational-modelling, title: "Relational modelling" }
       - { id: sql-joins, title: "SQL queries and joins" }
@@ -40,8 +41,8 @@ sections:
       - { id: migrations, title: "Schema migrations" }
       - { id: nosql-types, title: "NoSQL store types" }
       - { id: connection-pooling, title: "Connection pooling", level: extra }
-  - id: auth
-    title: "Identity and access"
+  - id: authentication
+    title: "Authentication"
     nodes:
       - { id: authn-authz, title: "Authentication and authorization" }
       - { id: password-hashing, title: "Password hashing" }
@@ -49,16 +50,15 @@ sections:
       - { id: tokens-jwt, title: "Tokens and JWT" }
       - { id: oauth, title: "OAuth 2.0 and OpenID Connect" }
       - { id: access-models, title: "Roles and permissions", level: extra }
-  - id: performance
-    title: "Speed"
+  - id: caching
+    title: "Caching"
     nodes:
-      - { id: caching-layers, title: "Where to cache" }
+      - { id: caching-layers, title: "Caching strategies" }
       - id: cache-invalidation
         title: "Cache invalidation"
       - { id: cdn, title: "CDNs" }
-      - { id: rate-limiting, title: "Rate limiting" }
-  - id: async
-    title: "Work in the background"
+  - id: messaging
+    title: "Message queues and background jobs"
     nodes:
       - { id: message-queues, title: "Message queues" }
       - { id: background-jobs, title: "Background jobs" }
@@ -68,7 +68,7 @@ sections:
   - id: scaling
     title: "Scaling"
     nodes:
-      - { id: scale-up-out, title: "Scaling up and scaling out" }
+      - { id: scale-up-out, title: "Vertical and horizontal scaling" }
       - { id: load-balancing, title: "Load balancing" }
       - { id: replication, title: "Replication" }
       - id: sharding
@@ -80,7 +80,7 @@ sections:
       - id: consistency-models
         title: "Consistency models"
   - id: reliability
-    title: "Staying up"
+    title: "Reliability"
     nodes:
       - id: timeouts
         title: "Timeouts"
@@ -88,16 +88,16 @@ sections:
       - { id: circuit-breakers, title: "Circuit breakers" }
       - { id: health-checks, title: "Health checks" }
       - { id: graceful-degradation, title: "Graceful degradation", level: extra }
-  - id: operations
-    title: "Running it"
+  - id: devops
+    title: "DevOps and monitoring"
     nodes:
-      - { id: logging, title: "Structured logging" }
+      - { id: logging, title: "Logging" }
       - { id: metrics-tracing, title: "Metrics and tracing" }
       - { id: containers, title: "Containers" }
       - { id: ci-cd, title: "CI and CD" }
       - { id: config-secrets, title: "Configuration and secrets" }
   - id: security
-    title: "Security"
+    title: "Web security"
     nodes:
       - { id: injection, title: "Input validation and injection" }
       - { id: web-vulnerabilities, title: "Common web vulnerabilities" }
