@@ -13,6 +13,7 @@ description: Add a new vocabulary term, or edit an existing one, in the artifact
    - Write every field to `.claude/skills/add-artifact/WRITING.md`.
    - If the user gave their own definition, keep their wording and change only what breaks a writing rule. Their own words help them remember the term.
    - Pick `related` and `contrasts` only from existing term slugs.
+   - Suggest the Backend roadmap node the term belongs to, from `src/content/tracks/backend.yaml`. Once the user confirms, add the slug to that node's `terms` list. A term may stay off the roadmap.
 4. **Confirm.** Show each draft in the numbered format from step 3 of the add-artifact skill, then wait for "ok" or edits. Skip this step if the user said "just add it".
 5. **Check.** Run `npm run check`, and fix any error before you go on.
 6. **Commit and push.** Run `git commit -m "term: <term>[, <term>...]"`, then `git push origin HEAD:main`. If the push is rejected, use the fallback in step 6 of the add-artifact skill.

@@ -1,6 +1,13 @@
 # Plan: use a roadmap as the template for what to learn
 
-Status: draft for the owner to review. Nothing in `src/`, `public/` or `.claude/` has changed.
+Status: built on 2026-11-25 as a Backend track. The decisions below override the draft where they differ.
+
+## Decisions
+1. **Roadmap:** the roadmap.sh Backend Developer roadmap, chosen by the owner.
+2. **Licence:** the track is written in our own words and order in `src/content/tracks/backend.yaml`. Nothing is copied from roadmap.sh. The track page links to the roadmap.sh homepage only.
+3. **Tracks:** one, Backend. The Systems design track below stays an option for later.
+4. **Learned:** a node has an artifact, and every term on it has a flashcard interval of 7 days or more.
+5. **Next:** `/add-artifact next` offers the first unfinished core node, with the two after it as alternatives.
 
 ## Verdict
 

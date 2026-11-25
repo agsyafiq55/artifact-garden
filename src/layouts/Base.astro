@@ -1,14 +1,17 @@
 ---
 import '../styles/global.css';
 import { withBase } from '../lib/url';
+import { getTracks } from '../lib/tracks';
 
 interface Props { title?: string; description?: string; indexed?: boolean }
 const { title, description = 'A garden of Claude artifacts and the engineering vocabulary they taught me.', indexed = false } = Astro.props;
 const pageTitle = title ? `${title} · artifact garden` : 'artifact garden';
 const path = Astro.url.pathname.replace(import.meta.env.BASE_URL.replace(/\/$/, ''), '') || '/';
 
+const [firstTrack] = await getTracks();
 const tabs = [
   { href: '/', label: 'Home', match: (p: string) => p === '/' },
+  ...(firstTrack ? [{ href: `/tracks/${firstTrack.id}`, label: 'Roadmap', match: (p: string) => p.startsWith('/tracks') }] : []),
   { href: '/artifacts', label: 'Artifacts', match: (p: string) => p.startsWith('/artifacts') || p.startsWith('/a/') },
   { href: '/terms', label: 'Glossary', match: (p: string) => p.startsWith('/terms') },
   { href: '/review', label: 'Review', match: (p: string) => p.startsWith('/review') },
@@ -150,12 +153,12 @@ const tabs = [
 
     .tabbar {
       position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
-      display: grid; grid-template-columns: repeat(5, 1fr);
+      display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
       height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
       padding-bottom: env(safe-area-inset-bottom);
       background: var(--bg); border-top: 2px solid var(--rule);
     }
-    .tabbar a { position: relative; display: grid; place-items: center; font-size: 0.8rem; font-weight: 500; color: var(--muted); background: none; }
+    .tabbar a { position: relative; display: grid; place-items: center; font-size: 0.74rem; font-weight: 500; color: var(--muted); background: none; }
     .tabbar a[aria-current='page'] { color: var(--ink); font-weight: 700; }
     .tabbar a[aria-current='page']::before { content: ''; position: absolute; top: -2px; left: 18%; right: 18%; height: 4px; background: var(--accent); }
     @media (min-width: 760px) {

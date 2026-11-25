@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, basename } from 'node:path';
+import { parse as parseYaml } from 'yaml';
 
 const root = new URL('..', import.meta.url).pathname;
 const ART_MD = join(root, 'src/content/artifacts');
 const TERM_MD = join(root, 'src/content/terms');
 const ART_HTML = join(root, 'public/artifacts');
+const TRACKS = join(root, 'src/content/tracks');
 
 const ALLOWED_HOSTS = [
   'cdnjs.cloudflare.com',
@@ -107,6 +109,27 @@ function checkAllWriting(artMd, terms, artHtml) {
   for (const slug of artHtml) checkWriting(`public/artifacts/${slug}.html`, readFileSync(join(ART_HTML, `${slug}.html`), 'utf8'));
 }
 
+function checkTracks(artMd, terms) {
+  const artifacts = new Set(artMd);
+  for (const slug of list(TRACKS, '.yaml')) {
+    const file = `src/content/tracks/${slug}.yaml`;
+    const text = readFileSync(join(TRACKS, `${slug}.yaml`), 'utf8');
+    checkWriting(file, text);
+    if (/roadmap\.sh\/\S/.test(text)) err(file, 'links into roadmap.sh; its licence forbids copying its content, so tracks use our own words and no deep links');
+    let track;
+    try { track = parseYaml(text); } catch (e) { err(file, `invalid YAML: ${e.message}`); continue; }
+    const seen = new Set();
+    for (const section of track?.sections ?? []) {
+      for (const node of section.nodes ?? []) {
+        if (seen.has(node.id)) err(file, `node id "${node.id}" is used twice`);
+        seen.add(node.id);
+        for (const a of node.artifacts ?? []) if (!artifacts.has(a)) err(file, `node "${node.id}": artifact "${a}" has no src/content/artifacts/${a}.md`);
+        for (const t of node.terms ?? []) if (!terms.has(t)) err(file, `node "${node.id}": term "${t}" has no src/content/terms/${t}.md`);
+      }
+    }
+  }
+}
+
 const terms = new Set(list(TERM_MD, '.md'));
 const artMd = list(ART_MD, '.md');
 const artHtml = new Set(list(ART_HTML, '.html'));
@@ -115,6 +138,7 @@ checkPairing(artMd, artHtml);
 checkSelfContained(artHtml);
 checkReferences(artMd, terms);
 checkAllWriting(artMd, terms, artHtml);
+checkTracks(artMd, terms);
 
 if (errors.length) {
   console.error(errors.join('\n'));

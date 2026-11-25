@@ -24,6 +24,7 @@
     "@types/d3-selection": "^3.0.13",
     "@types/d3-zoom": "^3.0.9",
     "pagefind": "^1.6.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "yaml": "^2.9.1"
   }
 }

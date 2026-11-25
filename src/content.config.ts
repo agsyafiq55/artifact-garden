@@ -37,4 +37,27 @@ const terms = defineCollection({
   }),
 });
 
-export const collections = { artifacts, terms };
+const node = z.object({
+  id: z.string().regex(/^[a-z0-9-]+$/, 'Node ids are kebab-case.'),
+  title: z.string(),
+  level: z.enum(['core', 'extra']).default('core'),
+  artifacts: z.array(reference('artifacts')).default([]),
+  terms: slugs('terms'),
+});
+
+const tracks = defineCollection({
+  loader: glob({ pattern: '*.yaml', base: './src/content/tracks' }),
+  schema: z
+    .object({
+      title: z.string(),
+      summary: z.string().max(200),
+      order: z.number().default(1),
+      sections: z.array(z.object({ id: z.string(), title: z.string(), nodes: z.array(node).min(1) })).min(1),
+    })
+    .refine((t) => {
+      const ids = t.sections.flatMap((s) => s.nodes.map((n) => n.id));
+      return new Set(ids).size === ids.length;
+    }, 'Every node id in a track must be unique.'),
+});
+
+export const collections = { artifacts, terms, tracks };

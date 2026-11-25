@@ -3,6 +3,7 @@ import { render } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import { getArtifacts, getTerms, type Artifact } from '../../lib/content';
 import { withBase } from '../../lib/url';
+import { nodeForArtifact, trackHref } from '../../lib/tracks';
 
 export async function getStaticPaths() {
   const artifacts = await getArtifacts();
@@ -15,11 +16,13 @@ const allTerms = await getTerms();
 const terms = artifact.data.terms.map((r) => allTerms.find((t) => t.id === r.id)).filter((t) => !!t);
 const { Content } = await render(artifact);
 const src = withBase(`/artifacts/${artifact.id}.html`);
+const place = await nodeForArtifact(artifact.id);
 ---
 <Base title={title} description={summary} indexed>
   <header class="page-head">
     <h1>{title}</h1>
     <p class="lede">{summary}</p>
+    {place && <a class="place" href={trackHref(place.track, place.node.id)}>{place.track.data.title} roadmap, {place.node.section}</a>}
   </header>
 
   <div class="frame-wrap" data-pagefind-ignore>
@@ -67,6 +70,7 @@ const src = withBase(`/artifacts/${artifact.id}.html`);
 
 <style>
   .page-head h1 { max-width: 18ch; }
+  .place { display: inline-flex; align-items: center; min-height: 44px; margin-top: 12px; font-weight: 700; color: var(--accent); }
   .lede { font-size: 1.2rem; line-height: 1.4; max-width: 46ch; margin: 20px 0 0; }
   .frame-wrap { margin: 32px calc(-1 * var(--gutter)) 0; }
   @media (min-width: 760px) { .frame-wrap { margin-inline: 0; } }

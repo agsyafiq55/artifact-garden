@@ -7,6 +7,7 @@ The owner mostly works from Claude Code on the web, on a phone. Keep replies sho
 ## Workflows
 - To add an artifact, use the `add-artifact` skill: `/add-artifact <what to explain>`.
 - To add or edit a single term, use the `add-term` skill: `/add-term <term>`.
+- To pick the next subject from the Backend roadmap, run `/add-artifact next`. For progress, run `/add-artifact status`.
 
 ## Where things live
 | What | Path |
@@ -18,6 +19,7 @@ The owner mostly works from Claude Code on the web, on a phone. Keep replies sho
 | Writing rules for all reader-facing text | `.claude/skills/add-artifact/WRITING.md` |
 | Schemas | `src/content.config.ts` |
 | Topic list | `src/lib/topics.ts` |
+| Backend roadmap: ordered sections and nodes | `src/content/tracks/backend.yaml` |
 
 Slugs are kebab-case, and an artifact's `.md` and `.html` files share one slug. A term's slug is the term in kebab-case, such as `eventual-consistency`.
 
@@ -37,6 +39,7 @@ Tags are free-form, lowercase and kebab-case. Reuse existing tags where they fit
 - A term definition is one line of plain English, at most 180 characters. The analogy is everyday and non-technical. The example shows the term in real engineering talk or code. Wrap code in backticks.
 - Every slug in `related` and `contrasts` must have a term file. Set `related` and `contrasts` on the new term only. The site shows backlinks, so the other term needs no edit.
 - Double-quote the YAML values `definition`, `analogy`, `example`, `summary`, `title` and `prompt`. An unquoted value that contains `: ` breaks the build.
+- The roadmap is our own wording and order. Never fetch roadmap.sh, and never copy its node names, order or descriptions. Its licence forbids publishing its content, and `npm run check` rejects links into roadmap.sh in track files.
 - Commit messages use one of these formats: `add: <artifact title> (+N terms)`, `term: <term>`, or `fix: <what changed>`.
 
 ## Commands

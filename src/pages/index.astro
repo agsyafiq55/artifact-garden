@@ -3,11 +3,14 @@ import Base from '../layouts/Base.astro';
 import ArtifactCard from '../components/ArtifactCard.astro';
 import { getArtifacts, getTerms } from '../lib/content';
 import { withBase } from '../lib/url';
+import { getTracks, nextNodes, trackHref } from '../lib/tracks';
 
 const artifacts = await getArtifacts();
 const terms = await getTerms();
 const recentTerms = [...terms].sort((a, b) => b.data.added.getTime() - a.data.added.getTime()).slice(0, 12);
 const ids = terms.map((t) => t.id);
+const [track] = await getTracks();
+const next = track ? nextNodes(track, 1)[0] : undefined;
 ---
 <Base>
   <section class="hero" data-enter>
@@ -15,6 +18,9 @@ const ids = terms.map((t) => t.id);
     <a class="due" href={withBase('/review')} id="review-cta" data-ids={JSON.stringify(ids)}>
       <span id="due-text">Review today's cards</span>
     </a>
+    {track && next && (
+      <a class="next" href={trackHref(track, next.id)}>Next on the {track.data.title} roadmap: <strong>{next.title}</strong></a>
+    )}
   </section>
 
   <section class="row">
@@ -47,5 +53,6 @@ const ids = terms.map((t) => t.id);
   .hero { padding: 6vh 0 10vh; }
   .hero h1 { font-size: clamp(2.9rem, 11vw, 7rem); max-width: 11ch; margin-bottom: 40px; }
   .due { font-size: 1.15rem; font-weight: 700; color: var(--accent); padding: 8px 0; display: inline-block; }
+  .next { display: block; width: fit-content; margin-top: 4px; padding: 8px 0; font-size: 1.05rem; }
   .more { margin-top: 20px; font-weight: 500; }
 </style>

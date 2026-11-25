@@ -1,6 +1,6 @@
 ---
 name: add-artifact
-description: Create a new interactive artifact for the artifact-garden site, extract vocabulary terms for the user to approve, then validate, commit to main and push. Use when the user asks to add, make, save or build an artifact, explainer, demo or visualisation of a concept, or runs /add-artifact.
+description: Create a new interactive artifact for the artifact-garden site, place it on the Backend roadmap, extract vocabulary terms for the user to approve, then validate, commit to main and push. Use when the user asks to add, make, save or build an artifact, explainer, demo or visualisation of a concept, asks what to learn next or for roadmap progress, or runs /add-artifact (also /add-artifact next and /add-artifact status).
 ---
 
 # Add an artifact
@@ -8,6 +8,17 @@ description: Create a new interactive artifact for the artifact-garden site, ext
 The user is usually on their phone. Keep messages short, use numbered lists, and never ask them to edit files.
 
 `$ARGUMENTS` is what to explain or build. It may also be pasted HTML, or a description of an artifact the user made elsewhere. If it is empty, ask in one line which concept they want.
+
+## The roadmap
+`src/content/tracks/backend.yaml` is the Backend roadmap: ordered sections of nodes. A node has an `id`, a `title`, a `level` (`core` or `extra`), and the `artifacts` and `terms` placed on it. A core node with no artifact is unfinished.
+
+- **`$ARGUMENTS` is `status`:** read the track file, then reply in two lines: how many core nodes have an artifact out of the total, and the next 3 unfinished core nodes in order. Do nothing else.
+- **`$ARGUMENTS` is `next`:** find the first 3 unfinished core nodes in order. Reply in one line, such as "Next on Backend: Clients and servers. Build it, or pick HTTP requests and responses or DNS?" Then end your turn. When the user answers, build that node's concept as the artifact, and remember the node for step 4.
+- **Anything else:** after you build the artifact, find the node it belongs to. Add one line to the step 3 reply: "Roadmap: <section>, <node title>. Reply 'no roadmap' to skip." If no node fits, say "Roadmap: no node fits. Reply 'add node <title> to <section>' to add one."
+
+Rules for the roadmap:
+- The roadmap is written in our own words and order. Never fetch roadmap.sh, and never copy its node names, order or descriptions into any file. Its licence forbids publishing its content.
+- Node titles follow `WRITING.md`. New node ids are kebab-case and unique in the track.
 
 ## 1. Sync
 ```bash
@@ -82,6 +93,7 @@ added: <today as YYYY-MM-DD>
 - Then set `terms: [...]` in the artifact's `.md` file to every kept term slug, new and existing.
 - Write `definition`, `analogy` and `example` to `WRITING.md`, and reread each card against it before you save it.
 - Link every true relation. `related` means one term helps explain the other. `contrasts` means people mix the two up.
+- Unless the user said "no roadmap", add the artifact's slug to that node's `artifacts` list in `src/content/tracks/backend.yaml`, and add every kept term slug to its `terms` list. A node written in flow style, like `{ id: dns, title: "DNS" }`, becomes block style when it gains lists.
 
 ## 5. Check
 ```bash
@@ -91,6 +103,7 @@ If it fails, read the error, fix it, and run it again. Never commit while it fai
 - unquoted YAML that contains `: `
 - a `related` slug with no term file
 - a relative `src` in the HTML
+- a track node that names a slug with no file
 
 ## 6. Commit and push
 ```bash
@@ -107,5 +120,5 @@ Some Claude Code web sessions may only push to their own branch. If the push to 
 Keep the report to two lines:
 ```
 Published, live in about a minute: https://agsyafiq55.github.io/artifact-garden/a/<slug>
-N new terms and M linked terms are in today's review.
+N new terms and M linked terms are in today's review. Next on the roadmap: <next unfinished core node>.
 ```
