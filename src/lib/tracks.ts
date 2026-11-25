@@ -33,7 +33,7 @@ export async function nodeForArtifact(artifactId: string) {
   return null;
 }
 
-export const trackHref = (t: Track, nodeId?: string) => withBase(`/tracks/${t.id}${nodeId ? `#${nodeId}` : ''}`);
+export const trackHref = (t: Track, nodeId?: string) => withBase(`/materials/${t.id}${nodeId ? `#${nodeId}` : ''}`);
 
 export const UNSORTED = 'unsorted';
 

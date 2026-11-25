@@ -1,0 +1,26 @@
+---
+import Base from '../../layouts/Base.astro';
+import CategoryList from '../../components/CategoryList.astro';
+import { getTracks, trackProgress, artifactTree, countLabel, UNSORTED } from '../../lib/tracks';
+import { withBase } from '../../lib/url';
+
+const tracks = await getTracks();
+const { unsorted } = await artifactTree();
+const items = [
+  ...tracks.map((t) => {
+    const { done, total } = trackProgress(t);
+    return { label: t.data.title, href: withBase(`/materials/${t.id}`), count: `${done} of ${total} subjects` };
+  }),
+  ...(unsorted.length ? [{ label: 'Not on a roadmap', href: withBase(`/materials/${UNSORTED}`), count: countLabel(unsorted.length) }] : []),
+];
+---
+<Base title="Materials">
+  <header class="page-head">
+    <h1>Materials</h1>
+  </header>
+  {items.length > 0 ? <CategoryList items={items} /> : <p class="muted empty">No roadmaps yet.</p>}
+</Base>
+
+<style>
+  .empty { margin-top: 28px; }
+</style>

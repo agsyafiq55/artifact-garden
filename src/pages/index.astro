@@ -23,7 +23,7 @@ const next = track ? nextNodes(track, 1)[0] : undefined;
     <h2 class="row__label">Latest</h2>
     <div class="row__body">
       <ul class="list">{artifacts.slice(0, 6).map((a) => <ArtifactCard artifact={a} />)}</ul>
-      {artifacts.length > 6 && <p class="more"><a href={withBase('/artifacts')}>All {artifacts.length} artifacts</a></p>}
+      {artifacts.length > 6 && <p class="more"><a href={withBase('/materials')}>All materials</a></p>}
     </div>
   </section>
 

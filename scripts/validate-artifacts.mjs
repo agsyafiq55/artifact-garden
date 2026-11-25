@@ -120,6 +120,7 @@ function checkTracks(artMd, terms) {
   const artifacts = new Set(artMd);
   for (const slug of list(TRACKS, '.yaml')) {
     const file = `src/content/tracks/${slug}.yaml`;
+    if (slug === 'unsorted') err(file, 'the name "unsorted" is taken by the Materials page for artifacts off every roadmap');
     const text = readFileSync(join(TRACKS, `${slug}.yaml`), 'utf8');
     checkWriting(file, text);
     if (/roadmap\.sh\/\S/.test(text)) err(file, 'links into roadmap.sh; its licence forbids copying its content, so tracks use our own words and no deep links');
