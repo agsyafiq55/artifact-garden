@@ -8,4 +8,4 @@ terms: [consistent-hashing, virtual-nodes, modulo-hashing, sharding, rebalancing
 prompt: "Explain consistent hashing interactively."
 ---
 
-With `hash % N`, changing N reshuffles almost every key. **Consistent hashing puts servers and keys on the same ring, so adding or removing a server only moves the keys in its arc, about 1/N of them.** Virtual nodes give each server many points on the ring, which evens out the load.
+With `hash % N`, changing N reshuffles almost every key. **Consistent hashing puts servers and keys on the same ring.** Adding or removing a server moves only the keys in that server's arc, about 1/N of them. Virtual nodes give each server many points on the ring, which evens out the load.

@@ -8,4 +8,4 @@ terms: [idempotency, idempotency-key, retry-with-backoff, at-least-once-delivery
 prompt: "Make an interactive demo showing why payment APIs need idempotency keys when clients retry."
 ---
 
-The lesson: **retries are only safe if the operation is idempotent**. A timeout doesn't tell you whether the server did the work, so the client has to retry, and the server has to be able to recognise the retry.
+**Retries are only safe if the operation is idempotent.** A timeout doesn't tell the client whether the server did the work. So the client retries, and the server has to recognise the retry.

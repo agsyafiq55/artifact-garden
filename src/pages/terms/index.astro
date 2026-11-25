@@ -3,7 +3,7 @@ import Base from '../../layouts/Base.astro';
 import TopicBadge from '../../components/TopicBadge.astro';
 import { getTerms } from '../../lib/content';
 import { TOPICS, type Topic } from '../../lib/topics';
-import { u } from '../../lib/url';
+import { withBase } from '../../lib/url';
 
 const terms = await getTerms();
 const usedTopics = [...new Set(terms.map((t) => t.data.topic))] as Topic[];
@@ -18,7 +18,7 @@ for (const t of terms) {
 <Base title="Glossary">
   <p class="eyebrow">Vocabulary</p>
   <h1>Glossary</h1>
-  <p class="lede">{terms.length} terms, A–Z. Each one links back to the artifact that taught it.</p>
+  <p class="lede">{terms.length} terms, A to Z. Each one links back to the artifact that taught it.</p>
 
   <div class="filters">
     <label class="grow"><span class="visually-hidden">Filter terms</span>
@@ -42,7 +42,7 @@ for (const t of terms) {
       <ul class="terms">
         {list.map((t) => (
           <li data-topic={t.data.topic} data-text={[t.data.term, ...t.data.aka, t.data.definition].join(' ').toLowerCase()}>
-            <a href={u(`/terms/${t.id}`)}>
+            <a href={withBase(`/terms/${t.id}`)}>
               <span class="name">{t.data.term}</span>
               <span class="def muted">{t.data.definition}</span>
             </a>

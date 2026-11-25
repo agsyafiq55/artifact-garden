@@ -3,7 +3,7 @@ import { render } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import TopicBadge from '../../components/TopicBadge.astro';
 import { getArtifacts, getTerms, fmtDate, type Artifact } from '../../lib/content';
-import { u } from '../../lib/url';
+import { withBase } from '../../lib/url';
 
 export async function getStaticPaths() {
   const artifacts = await getArtifacts();
@@ -15,23 +15,23 @@ const { title, summary, topic, tags, created, prompt } = artifact.data;
 const allTerms = await getTerms();
 const terms = artifact.data.terms.map((r) => allTerms.find((t) => t.id === r.id)).filter((t) => !!t);
 const { Content } = await render(artifact);
-const src = u(`/artifacts/${artifact.id}.html`);
+const src = withBase(`/artifacts/${artifact.id}.html`);
 ---
 <Base title={title} description={summary} indexed>
-  <p class="eyebrow"><a href={u('/artifacts')}>Artifacts</a></p>
+  <p class="eyebrow"><a href={withBase('/artifacts')}>Artifacts</a></p>
   <h1>{title}</h1>
   <p class="lede">{summary}</p>
   <div class="meta" data-pagefind-ignore>
     <TopicBadge topic={topic} />
     <span class="muted">{fmtDate(created)}</span>
-    {tags.map((t) => <a class="tag" href={u(`/artifacts?tag=${encodeURIComponent(t)}`)}>{t}</a>)}
+    {tags.map((t) => <a class="tag" href={withBase(`/artifacts?tag=${encodeURIComponent(t)}`)}>{t}</a>)}
   </div>
 
   <div class="frame-wrap" data-pagefind-ignore>
     <iframe id="artifact" title={title} data-src={src} sandbox="allow-scripts allow-popups" loading="lazy"></iframe>
     <div class="frame-bar">
       <button class="btn small" id="taller" type="button">Taller</button>
-      <a class="btn small" href={src} target="_blank" rel="noopener">Open full screen ↗</a>
+      <a class="btn small" href={src} target="_blank" rel="noopener">Open full screen</a>
     </div>
   </div>
 
@@ -40,7 +40,7 @@ const src = u(`/artifacts/${artifact.id}.html`);
       <h2>Terms from this artifact</h2>
       <div class="grid two">
         {terms.map((t) => (
-          <a class="card term" href={u(`/terms/${t.id}`)}>
+          <a class="card term" href={withBase(`/terms/${t.id}`)}>
             <h3>{t.data.term}</h3>
             <p class="muted">{t.data.definition}</p>
           </a>

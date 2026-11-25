@@ -81,20 +81,23 @@
     </div></div>
 
     <div class="actions">
-      <button class="primary" id="write">Write x+1 → A</button>
-      <button id="read">Read x ← B</button>
+      <button class="primary" id="write">Write x+1 to A</button>
+      <button id="read">Read x from B</button>
     </div>
 
     <div class="score">
-      <div class="pill" id="pC"><b>Consistent</b><span>—</span></div>
-      <div class="pill" id="pA"><b>Available</b><span>—</span></div>
+      <div class="pill" id="pC"><b>Consistent</b><span>Untested</span></div>
+      <div class="pill" id="pA"><b>Available</b><span>Untested</span></div>
     </div>
     <div class="msg" id="msg" aria-live="polite">Try a write and a read while the network is healthy.</div>
   </section>
 </main>
 <script>
-  const t = new URLSearchParams(location.search).get('theme');
-  if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t;
+  function applyThemeFromQuery() {
+    const theme = new URLSearchParams(location.search).get('theme');
+    if (theme === 'dark' || theme === 'light') document.documentElement.dataset.theme = theme;
+  }
+  applyThemeFromQuery();
 
   const $ = (id) => document.getElementById(id);
   const s = { a: 0, b: 0, net: 'healthy', mode: 'CP' };
@@ -106,7 +109,7 @@
   }
   function say(text, cls) { const m = $('msg'); m.textContent = text; m.className = 'msg ' + (cls || ''); }
   function score(c, a) {
-    const set = (id, v) => { const p = $(id); p.className = 'pill ' + (v === null ? '' : v ? 'good' : 'bad'); p.querySelector('span').textContent = v === null ? '—' : v ? 'Yes' : 'No'; };
+    const set = (id, v) => { const p = $(id); p.className = 'pill ' + (v === null ? '' : v ? 'good' : 'bad'); p.querySelector('span').textContent = v === null ? 'Untested' : v ? 'Yes' : 'No'; };
     set('pC', c); set('pA', a);
   }
   function seg(id, key) {
@@ -116,7 +119,7 @@
       s[key] = b.dataset.v;
       if (key === 'net' && s.net === 'healthy' && s.a !== s.b) {
         s.b = s.a; render();
-        say('Network healed. Replicas exchanged updates and converged: that\'s eventual consistency.', 'ok');
+        say('Network healed. Replicas exchanged updates and converged. That\'s eventual consistency.', 'ok');
         score(true, true); return;
       }
       if (key === 'net') say(s.net === 'partition' ? 'Link cut. Both replicas still run, but they can\'t reach each other.' : 'Network healthy.', s.net === 'partition' ? 'warn' : '');
@@ -133,7 +136,7 @@
   $('read').addEventListener('click', () => {
     if (s.net === 'healthy' || s.a === s.b) { say(`B returned x=${s.b}, the latest value.`, 'ok'); score(true, true); return; }
     if (s.mode === 'CP') { say('Error: B can\'t be sure it has the latest value, so it refuses to answer.', 'bad'); score(true, false); return; }
-    say(`B returned x=${s.b}, but A has x=${s.a}. Available, but stale.`, 'warn'); score(false, true);
+    say(`B returned x=${s.b}, but A has x=${s.a}. B stayed available, but its answer is stale.`, 'warn'); score(false, true);
   });
   render();
 </script>

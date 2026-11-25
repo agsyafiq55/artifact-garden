@@ -1,7 +1,7 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import TopicBadge from './TopicBadge.astro';
-import { u } from '../lib/url';
+import { withBase } from '../lib/url';
 
 interface Props { artifact: CollectionEntry<'artifacts'> }
 const { artifact } = Astro.props;
@@ -13,7 +13,7 @@ const date = created.toLocaleDateString('en-GB', { day: 'numeric', month: 'short
     <TopicBadge topic={topic} />
     <span class="muted small">{date}</span>
   </div>
-  <h3><a href={u(`/a/${artifact.id}`)} class="stretch">{title}</a></h3>
+  <h3><a href={withBase(`/a/${artifact.id}`)} class="stretch">{title}</a></h3>
   <p class="muted">{summary}</p>
   <p class="small muted foot">{terms.length} term{terms.length === 1 ? '' : 's'}</p>
 </article>

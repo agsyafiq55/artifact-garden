@@ -2,7 +2,7 @@
 import Base from '../layouts/Base.astro';
 import ArtifactCard from '../components/ArtifactCard.astro';
 import { getArtifacts, getTerms } from '../lib/content';
-import { u } from '../lib/url';
+import { withBase } from '../lib/url';
 
 const artifacts = await getArtifacts();
 const terms = await getTerms();
@@ -16,26 +16,26 @@ const ids = terms.map((t) => t.id);
     <p class="lede">{artifacts.length} artifacts · {terms.length} terms in the glossary</p>
   </section>
 
-  <a class="card review-cta" href={u('/review')} id="review-cta" data-ids={JSON.stringify(ids)}>
+  <a class="card review-cta" href={withBase('/review')} id="review-cta" data-ids={JSON.stringify(ids)}>
     <div>
       <p class="eyebrow">Today's review</p>
       <p class="due"><span id="due-count">–</span> <span id="due-label">cards due</span></p>
-      <p class="muted sub" id="due-sub">Spaced repetition keeps the vocabulary fresh.</p>
+      <p class="muted sub" id="due-sub">Each term comes back at growing intervals, just before you would forget it.</p>
     </div>
-    <span class="btn accent" aria-hidden="true">Start →</span>
+    <span class="btn accent" aria-hidden="true">Start</span>
   </a>
 
   <h2>Latest artifacts</h2>
   <div class="grid two">
     {artifacts.slice(0, 6).map((a) => <ArtifactCard artifact={a} />)}
   </div>
-  {artifacts.length > 6 && <p class="more"><a href={u('/artifacts')}>All {artifacts.length} artifacts →</a></p>}
+  {artifacts.length > 6 && <p class="more"><a href={withBase('/artifacts')}>All {artifacts.length} artifacts</a></p>}
 
   <h2>Recently added terms</h2>
   <ul class="chips">
-    {recentTerms.map((t) => <li><a class="chip" href={u(`/terms/${t.id}`)}>{t.data.term}</a></li>)}
+    {recentTerms.map((t) => <li><a class="chip" href={withBase(`/terms/${t.id}`)}>{t.data.term}</a></li>)}
   </ul>
-  <p class="more"><a href={u('/terms')}>Full glossary →</a></p>
+  <p class="more"><a href={withBase('/terms')}>Full glossary</a></p>
 </Base>
 
 <script>

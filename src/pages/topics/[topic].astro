@@ -3,7 +3,7 @@ import Base from '../../layouts/Base.astro';
 import ArtifactCard from '../../components/ArtifactCard.astro';
 import { getArtifacts, getTerms } from '../../lib/content';
 import { TOPICS, TOPIC_IDS, type Topic } from '../../lib/topics';
-import { u } from '../../lib/url';
+import { withBase } from '../../lib/url';
 
 export function getStaticPaths() {
   return TOPIC_IDS.map((topic) => ({ params: { topic } }));
@@ -15,7 +15,7 @@ const artifacts = (await getArtifacts()).filter((a) => a.data.topic === topic);
 const terms = (await getTerms()).filter((t) => t.data.topic === topic);
 ---
 <Base title={label}>
-  <p class="eyebrow"><a href={u('/artifacts')}>Topic</a></p>
+  <p class="eyebrow"><a href={withBase('/artifacts')}>Topic</a></p>
   <h1 style={`--hue:${hue}`} class="title">{label}</h1>
   <p class="lede">{artifacts.length} artifact{artifacts.length === 1 ? '' : 's'} · {terms.length} term{terms.length === 1 ? '' : 's'}</p>
 
@@ -26,7 +26,7 @@ const terms = (await getTerms()).filter((t) => t.data.topic === topic);
 
   {terms.length > 0 && (<>
     <h2>Terms</h2>
-    <ul class="chips">{terms.map((t) => <li><a class="chip" href={u(`/terms/${t.id}`)}>{t.data.term}</a></li>)}</ul>
+    <ul class="chips">{terms.map((t) => <li><a class="chip" href={withBase(`/terms/${t.id}`)}>{t.data.term}</a></li>)}</ul>
   </>)}
 
   {artifacts.length + terms.length === 0 && <p class="muted">Nothing here yet.</p>}

@@ -34,7 +34,6 @@
   .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
   button { font: 600 .95rem Inter, sans-serif; min-height: 44px; padding: 10px 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
   button.primary { background: var(--accent); color: #fff; border-color: transparent; }
-  /* --- artifact-specific styles below --- */
   h2 { font-size: 1.1rem; margin: 0 0 10px; }
   .label { font-size: .8rem; color: var(--muted); margin: 0 0 6px; }
   .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
@@ -94,11 +93,11 @@
     <section class="card ring-card" id="ring-card" hidden>
       <h2>The ring</h2>
       <div class="ring-wrap"><svg class="ring" id="ring" viewBox="0 0 300 300" role="img" aria-label="Hash ring with servers and keys"></svg></div>
-      <p class="legend">Big dots are servers (or their virtual nodes). Small dots are keys. Each key belongs to the next server clockwise.</p>
+      <p class="legend">Big dots are servers or their virtual nodes. Small dots are keys. Each key belongs to the next server clockwise.</p>
     </section>
 
     <section class="card">
-      <h2>Keys → servers</h2>
+      <h2>Which server holds each key</h2>
       <div class="keys" id="keys"></div>
       <p class="legend">Outlined keys moved to a different server in the last change.</p>
     </section>
@@ -110,9 +109,11 @@
   </div>
 </main>
 <script>
-  // Keep this: lets the site pass its light/dark choice into the iframe.
-  const t = new URLSearchParams(location.search).get('theme');
-  if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t;
+  function applyThemeFromQuery() {
+    const theme = new URLSearchParams(location.search).get('theme');
+    if (theme === 'dark' || theme === 'light') document.documentElement.dataset.theme = theme;
+  }
+  applyThemeFromQuery();
 
   const $ = (id) => document.getElementById(id);
   const NAMES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
@@ -121,29 +122,32 @@
   const SPACE = 2 ** 32;
   const color = (s) => `hsl(${HUES[NAMES.indexOf(s)]} 55% 46%)`;
 
-  // FNV-1a 32-bit, then a final avalanche mix so nearby strings spread out.
-  function hash(str) {
+  function fnv1a32(str) {
     let h = 0x811c9dc5;
     for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+    return h >>> 0;
+  }
+  function fmix32(h) {
     h ^= h >>> 16; h = Math.imul(h, 0x85ebca6b); h ^= h >>> 13; h = Math.imul(h, 0xc2b2ae35); h ^= h >>> 16;
     return h >>> 0;
   }
+  const hash32 = (str) => fmix32(fnv1a32(str));
 
   const state = { mode: 'mod', servers: ['A', 'B', 'C', 'D'], vnodes: 1, owner: null, moved: new Set() };
 
   function ringPoints() {
     const pts = [];
-    for (const s of state.servers) for (let v = 0; v < state.vnodes; v++) pts.push({ s, h: hash(`${s}#${v}`) });
+    for (const s of state.servers) for (let v = 0; v < state.vnodes; v++) pts.push({ s, h: hash32(`${s}#${v}`) });
     return pts.sort((a, b) => a.h - b.h);
   }
   function assign() {
     const out = {};
     if (state.mode === 'mod') {
-      for (const k of KEYS) out[k] = state.servers[hash(k) % state.servers.length];
+      for (const k of KEYS) out[k] = state.servers[hash32(k) % state.servers.length];
     } else {
       const pts = ringPoints();
       for (const k of KEYS) {
-        const h = hash(k);
+        const h = hash32(k);
         out[k] = (pts.find((p) => p.h >= h) ?? pts[0]).s;
       }
     }
@@ -161,8 +165,8 @@
     const good = state.mode === 'ring';
     v.className = 'verdict ' + (pct > 50 ? 'bad' : 'good');
     v.innerHTML = `<b class="big">${n} of ${KEYS.length} keys moved (${pct}%)</b>` + (good
-      ? `${what}. On the ring only the keys in the arc next to that server change owner, so roughly 1/N (about ${ideal}%) of keys move. Everything else stays cached.`
-      : `${what}. Because N changed, <code>hash % N</code> gives almost every key a new answer. In a real cache cluster that's a stampede of misses hitting the database at once.`);
+      ? `${what}. On the ring, only the keys in that server's arc change owner, so about 1/N of the keys move, which is ${ideal}% here. Every other key stays cached.`
+      : `${what}. Because N changed, <code>hash % N</code> gives almost every key a new answer. In a real cache cluster, every moved key is a cache miss, and all those misses hit the database at once.`);
     render();
   }
 
@@ -173,7 +177,7 @@
     $('vn-row').hidden = state.mode !== 'ring';
     $('ring-card').hidden = state.mode !== 'ring';
 
-    $('keys').innerHTML = KEYS.map((k) => `<div class="key${state.moved.has(k) ? ' moved' : ''}" style="background:${color(owner[k])}" title="${k} → ${owner[k]}">${k.slice(5)}→${owner[k]}</div>`).join('');
+    $('keys').innerHTML = KEYS.map((k) => `<div class="key${state.moved.has(k) ? ' moved' : ''}" style="background:${color(owner[k])}" title="${k} is on server ${owner[k]}">${k.slice(5)} on ${owner[k]}</div>`).join('');
 
     const counts = Object.fromEntries(state.servers.map((s) => [s, 0]));
     for (const k of KEYS) counts[owner[k]]++;
@@ -185,7 +189,7 @@
       const pos = (h, r = R) => { const a = (h / SPACE) * 2 * Math.PI - Math.PI / 2; return [C + r * Math.cos(a), C + r * Math.sin(a)]; };
       let svg = `<circle class="track" cx="${C}" cy="${C}" r="${R}"/>`;
       for (const k of KEYS) {
-        const [x, y] = pos(hash(k), R - 16);
+        const [x, y] = pos(hash32(k), R - 16);
         svg += `<circle cx="${x}" cy="${y}" r="4" fill="${color(owner[k])}" ${state.moved.has(k) ? 'stroke="var(--ink)" stroke-width="2"' : ''}/>`;
       }
       const pts = ringPoints();
@@ -221,8 +225,8 @@
     state.vnodes = Number(e.target.value); $('vn-out').textContent = state.vnodes; state.moved = new Set();
     $('verdict').className = 'verdict';
     $('verdict').textContent = state.vnodes === 1
-      ? 'One point per server: arcs are uneven, so some servers get far more keys.'
-      : `${state.vnodes} points per server: the arcs even out, so load is more balanced. Compare the bars.`;
+      ? 'One point per server. The arcs are uneven, so some servers get far more keys.'
+      : `${state.vnodes} points per server. The arcs even out, so the load is more balanced. Compare the bars.`;
     render();
   });
   render();

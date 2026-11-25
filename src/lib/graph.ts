@@ -1,11 +1,10 @@
 import { getArtifacts, getTerms } from './content';
 import { TOPICS } from './topics';
-import { u } from './url';
+import { withBase } from './url';
 
 export interface GNode { id: string; label: string; kind: 'term' | 'artifact'; hue: number; topic: string; href: string; degree: number }
 export interface GLink { source: string; target: string; kind: 'related' | 'contrast' | 'source' }
 
-/** Build the knowledge graph at build time: terms + artifacts as nodes. */
 export async function buildGraph() {
   const terms = await getTerms();
   const artifacts = await getArtifacts();
@@ -20,12 +19,12 @@ export async function buildGraph() {
   };
 
   for (const t of terms) {
-    nodes.push({ id: `t:${t.id}`, label: t.data.term, kind: 'term', hue: TOPICS[t.data.topic].hue, topic: t.data.topic, href: u(`/terms/${t.id}`), degree: 0 });
+    nodes.push({ id: `t:${t.id}`, label: t.data.term, kind: 'term', hue: TOPICS[t.data.topic].hue, topic: t.data.topic, href: withBase(`/terms/${t.id}`), degree: 0 });
     t.data.related.forEach((r) => add({ source: `t:${t.id}`, target: `t:${r.id}`, kind: 'related' }));
     t.data.contrasts.forEach((r) => add({ source: `t:${t.id}`, target: `t:${r.id}`, kind: 'contrast' }));
   }
   for (const a of artifacts) {
-    nodes.push({ id: `a:${a.id}`, label: a.data.title, kind: 'artifact', hue: TOPICS[a.data.topic].hue, topic: a.data.topic, href: u(`/a/${a.id}`), degree: 0 });
+    nodes.push({ id: `a:${a.id}`, label: a.data.title, kind: 'artifact', hue: TOPICS[a.data.topic].hue, topic: a.data.topic, href: withBase(`/a/${a.id}`), degree: 0 });
     a.data.terms.forEach((r) => add({ source: `a:${a.id}`, target: `t:${r.id}`, kind: 'source' }));
   }
 

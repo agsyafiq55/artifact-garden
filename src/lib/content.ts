@@ -13,8 +13,7 @@ export async function getTerms() {
   return list.sort((a, b) => a.data.term.localeCompare(b.data.term, 'en', { sensitivity: 'base' }));
 }
 
-/** term id → artifacts that introduced it */
-export async function getTermSources() {
+export async function getArtifactsByTermId() {
   const map = new Map<string, Artifact[]>();
   for (const a of await getArtifacts()) {
     for (const ref of a.data.terms) {
@@ -25,7 +24,6 @@ export async function getTermSources() {
   return map;
 }
 
-/** Terms that point at this term via related/contrasts (so links show both ways). */
 export function backlinks(terms: Term[], id: string) {
   const related = new Set<string>();
   const contrasts = new Set<string>();

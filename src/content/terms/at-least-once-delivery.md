@@ -2,7 +2,7 @@
 term: "At-least-once delivery"
 aka: []
 definition: "A messaging guarantee that every message arrives, but some may arrive more than once."
-analogy: "A courier who re-delivers whenever unsure you got the parcel, so you sometimes get two."
+analogy: "A courier who delivers again whenever they aren't sure you got the parcel, so you sometimes get two."
 example: "SQS standard queues are at-least-once, so consumers must be idempotent to cope with duplicates."
 related: [idempotency, retry-with-backoff]
 contrasts: [exactly-once-semantics]

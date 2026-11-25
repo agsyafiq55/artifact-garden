@@ -8,4 +8,4 @@ terms: [cap-theorem, network-partition, strong-consistency, eventual-consistency
 prompt: "Build an interactive CAP theorem demo with two replicas and a partition switch."
 ---
 
-CAP is really a statement about **what you give up during a partition**. When the network is healthy you can have both consistency and availability; the choice only bites when nodes can't talk.
+CAP describes **what a distributed store gives up during a partition**. While the network is healthy, a store can be both consistent and available. It has to choose only when its nodes can't reach each other.

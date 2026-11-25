@@ -2,7 +2,7 @@
 import Base from '../layouts/Base.astro';
 import { getTerms } from '../lib/content';
 import { TOPICS, type Topic } from '../lib/topics';
-import { u } from '../lib/url';
+import { withBase } from '../lib/url';
 
 const terms = await getTerms();
 const cards = terms.map((t) => ({
@@ -14,7 +14,7 @@ const cards = terms.map((t) => ({
   topic: t.data.topic,
   topicLabel: TOPICS[t.data.topic].label,
   hue: TOPICS[t.data.topic].hue,
-  href: u(`/terms/${t.id}`),
+  href: withBase(`/terms/${t.id}`),
 }));
 const usedTopics = [...new Set(terms.map((t) => t.data.topic))] as Topic[];
 ---
@@ -44,20 +44,20 @@ const usedTopics = [...new Set(terms.map((t) => t.data.topic))] as Topic[];
         <p class="c-analogy" id="c-analogy"></p>
         <p class="eyebrow">In context</p>
         <p class="c-example" id="c-example"></p>
-        <a class="c-link" id="c-link" href="#">Open term page →</a>
+        <a class="c-link" id="c-link" href="#">Open term page</a>
       </div>
     </article>
 
     <button class="btn primary reveal" id="reveal" hidden>Show answer</button>
     <div class="grades" id="grades" hidden>
-      <button class="btn g0" data-g="0">Again<small></small></button>
-      <button class="btn g1" data-g="1">Hard<small></small></button>
-      <button class="btn g2" data-g="2">Good<small></small></button>
-      <button class="btn g3" data-g="3">Easy<small></small></button>
+      <button class="btn g0" data-grade="Again">Again<small></small></button>
+      <button class="btn g1" data-grade="Hard">Hard<small></small></button>
+      <button class="btn g2" data-grade="Good">Good<small></small></button>
+      <button class="btn g3" data-grade="Easy">Easy<small></small></button>
     </div>
 
     <div class="card done" id="done" hidden>
-      <h2>All caught up ✓</h2>
+      <h2>All caught up</h2>
       <p class="muted" id="done-msg">No cards due right now.</p>
       <button class="btn small" id="more-new" hidden>Learn 5 more new terms</button>
     </div>
@@ -86,11 +86,13 @@ const usedTopics = [...new Set(terms.map((t) => t.data.topic))] as Topic[];
 </Base>
 
 <script>
-  import { load, save, queue, grade, schedule, formatInterval, exportJson, importJson, reset, type Grade, type Store } from '../lib/srs';
+  import { load, save, queue, grade, schedule, formatInterval, exportJson, mergeImport, reset, allowMoreNew, localDayKey, Grade, type Store } from '../lib/srs';
 
   type Card = { id: string; term: string; definition: string; analogy: string; example: string; topic: string; topicLabel: string; hue: number; href: string };
   const cards: Card[] = JSON.parse(document.getElementById('cards-data')!.textContent!);
   const byId = new Map(cards.map((c) => [c.id, c]));
+  const gradeOf = (b: HTMLElement) => Grade[b.dataset.grade as keyof typeof Grade];
+  const GRADE_KEYS: Record<string, Grade> = { '1': Grade.Again, '2': Grade.Hard, '3': Grade.Good, '4': Grade.Easy };
   const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
   const topicSel = $<HTMLSelectElement>('f-topic');
 
@@ -140,7 +142,7 @@ const usedTopics = [...new Set(terms.map((t) => t.data.topic))] as Topic[];
     const isNew = !store.cards[current];
     $('card').classList.toggle('is-new', isNew);
     document.querySelectorAll<HTMLButtonElement>('#grades button').forEach((b) => {
-      const g = Number(b.dataset.g) as Grade;
+      const g = gradeOf(b);
       b.querySelector('small')!.textContent = formatInterval(schedule(store.cards[current!], g));
     });
   }
@@ -155,28 +157,23 @@ const usedTopics = [...new Set(terms.map((t) => t.data.topic))] as Topic[];
     if (!current) return;
     grade(store, current, g);
     reviewedToday++;
-    if (g === 0) session.push(current); // see it again before the session ends
+    if (g === Grade.Again) session.push(current);
     next();
   }
 
   $('reveal').addEventListener('click', reveal);
   $('card').addEventListener('click', (e) => { if (!(e.target as HTMLElement).closest('a')) reveal(); });
   $('grades').addEventListener('click', (e) => {
-    const b = (e.target as HTMLElement).closest('button'); if (b) answer(Number(b.dataset.g) as Grade);
+    const b = (e.target as HTMLElement).closest('button'); if (b) answer(gradeOf(b));
   });
   document.addEventListener('keydown', (e) => {
     if ((e.target as HTMLElement).matches('input, select, textarea') || document.querySelector('dialog[open]')) return;
     if ((e.key === ' ' || e.key === 'Enter') && !$('reveal').hidden) { e.preventDefault(); reveal(); }
-    else if (!$('grades').hidden && ['1', '2', '3', '4'].includes(e.key)) answer((Number(e.key) - 1) as Grade);
+    else if (!$('grades').hidden && e.key in GRADE_KEYS) answer(GRADE_KEYS[e.key]);
   });
   topicSel.addEventListener('change', build);
-  $('more-new').addEventListener('click', () => {
-    const k = new Date().toLocaleDateString('en-CA');
-    store.newIntroduced[k] = Math.max(0, (store.newIntroduced[k] ?? 0) - 5);
-    save(store); build();
-  });
+  $('more-new').addEventListener('click', () => { allowMoreNew(store, 5); build(); });
 
-  // Settings
   const msg = (s: string) => { $('settings-msg').textContent = s; };
   const perDay = $<HTMLSelectElement>('per-day');
   perDay.value = String(store.newPerDay);
@@ -185,14 +182,14 @@ const usedTopics = [...new Set(terms.map((t) => t.data.topic))] as Topic[];
     const blob = new Blob([exportJson(store)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `artifact-garden-progress-${new Date().toLocaleDateString('en-CA')}.json`;
+    a.download = `artifact-garden-progress-${localDayKey()}.json`;
     a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     msg('Progress exported.');
   });
   $<HTMLInputElement>('import').addEventListener('change', async (e) => {
     const f = (e.target as HTMLInputElement).files?.[0]; if (!f) return;
     try {
-      const r = importJson(store, await f.text());
+      const r = mergeImport(store, await f.text());
       msg(`Imported: ${r.added} new, ${r.updated} updated.`); build();
     } catch (err) { msg(`Import failed: ${(err as Error).message}`); }
     (e.target as HTMLInputElement).value = '';

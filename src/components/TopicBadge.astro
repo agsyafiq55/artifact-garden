@@ -1,11 +1,11 @@
 ---
 import { TOPICS, type Topic } from '../lib/topics';
-import { u } from '../lib/url';
+import { withBase } from '../lib/url';
 
 interface Props { topic: Topic; link?: boolean }
 const { topic, link = true } = Astro.props;
 const { label, hue } = TOPICS[topic];
 ---
 {link
-  ? <a class="topic" href={u(`/topics/${topic}`)} style={`--hue:${hue}`}>{label}</a>
+  ? <a class="topic" href={withBase(`/topics/${topic}`)} style={`--hue:${hue}`}>{label}</a>
   : <span class="topic" style={`--hue:${hue}`}>{label}</span>}

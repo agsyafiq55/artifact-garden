@@ -34,7 +34,6 @@
   .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
   button { font: 600 .95rem Inter, sans-serif; min-height: 44px; padding: 10px 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
   button.primary { background: var(--accent); color: #fff; border-color: transparent; }
-  /* --- artifact-specific styles below --- */
 </style>
 </head>
 <body>
@@ -43,15 +42,14 @@
   <p class="lede">{{ONE-SENTENCE HOOK: what you will see / try}}</p>
 
   <section class="card">
-    <!-- interactive part goes here -->
   </section>
 </main>
 <script>
-  // Keep this: lets the site pass its light/dark choice into the iframe.
-  const t = new URLSearchParams(location.search).get('theme');
-  if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t;
-
-  // artifact logic below
+  function applyThemeFromQuery() {
+    const theme = new URLSearchParams(location.search).get('theme');
+    if (theme === 'dark' || theme === 'light') document.documentElement.dataset.theme = theme;
+  }
+  applyThemeFromQuery();
 </script>
 </body>
 </html>
