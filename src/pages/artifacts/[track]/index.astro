@@ -1,0 +1,40 @@
+---
+import Base from '../../../layouts/Base.astro';
+import ArtifactCard from '../../../components/ArtifactCard.astro';
+import CategoryList from '../../../components/CategoryList.astro';
+import Crumbs from '../../../components/Crumbs.astro';
+import { artifactTree, countLabel, UNSORTED } from '../../../lib/tracks';
+import { withBase } from '../../../lib/url';
+
+export async function getStaticPaths() {
+  const { tracks, unsorted } = await artifactTree();
+  return [
+    ...tracks.map((t) => ({ params: { track: t.track.id }, props: { kind: 'track' as const, id: t.track.id } })),
+    ...(unsorted.length ? [{ params: { track: UNSORTED }, props: { kind: 'unsorted' as const, id: UNSORTED } }] : []),
+  ];
+}
+
+const { kind, id } = Astro.props;
+const { tracks, unsorted } = await artifactTree();
+const t = tracks.find((x) => x.track.id === id);
+const title = kind === 'unsorted' ? 'Unsorted' : t!.track.data.title;
+const items = (t?.sections ?? []).map((s) => ({
+  label: s.section.title,
+  href: withBase(`/artifacts/${id}/${s.section.id}`),
+  count: countLabel(s.concepts.reduce((m, c) => m + c.artifacts.length, 0)),
+}));
+---
+<Base title={`${title} artifacts`}>
+  <header class="page-head">
+    <Crumbs trail={[{ label: 'Artifacts', href: withBase('/artifacts') }]} />
+    <h1>{title}</h1>
+  </header>
+
+  {kind === 'unsorted'
+    ? <ul class="list body-list">{unsorted.map((a) => <ArtifactCard artifact={a} />)}</ul>
+    : <CategoryList items={items} />}
+</Base>
+
+<style>
+  .body-list { margin-top: 28px; }
+</style>

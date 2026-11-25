@@ -1,0 +1,33 @@
+---
+import Base from '../../../layouts/Base.astro';
+import ArtifactCard from '../../../components/ArtifactCard.astro';
+import Crumbs from '../../../components/Crumbs.astro';
+import { artifactTree, trackHref } from '../../../lib/tracks';
+import { withBase } from '../../../lib/url';
+
+export async function getStaticPaths() {
+  const { tracks } = await artifactTree();
+  return tracks.flatMap((t) => t.sections.map((s) => ({ params: { track: t.track.id, section: s.section.id }, props: { trackId: t.track.id, sectionId: s.section.id } })));
+}
+
+const { trackId, sectionId } = Astro.props;
+const { tracks } = await artifactTree();
+const t = tracks.find((x) => x.track.id === trackId)!;
+const s = t.sections.find((x) => x.section.id === sectionId)!;
+---
+<Base title={`${s.section.title} artifacts`}>
+  <header class="page-head">
+    <Crumbs trail={[
+      { label: 'Artifacts', href: withBase('/artifacts') },
+      { label: t.track.data.title, href: withBase(`/artifacts/${t.track.id}`) },
+    ]} />
+    <h1>{s.section.title}</h1>
+  </header>
+
+  {s.concepts.map((c) => (
+    <section class="row">
+      <h2 class="row__label"><a href={trackHref(t.track, c.node.id)}>{c.node.title}</a></h2>
+      <ul class="row__body list">{c.artifacts.map((a) => <ArtifactCard artifact={a} />)}</ul>
+    </section>
+  ))}
+</Base>

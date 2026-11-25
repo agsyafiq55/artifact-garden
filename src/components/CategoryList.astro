@@ -1,0 +1,30 @@
+---
+interface Props { items: { label: string; href: string; count: string }[] }
+const { items } = Astro.props;
+---
+<ol class="cats">
+  {items.map((it, i) => (
+    <li>
+      <a class="cat" href={it.href}>
+        <span class="cat__num">{String(i + 1).padStart(2, '0')}</span>
+        <span class="cat__label">{it.label}</span>
+        <span class="cat__count">{it.count}</span>
+      </a>
+    </li>
+  ))}
+</ol>
+
+<style>
+  .cats { list-style: none; margin: 28px 0 0; padding: 0; }
+  .cats li + li { border-top: 1px solid var(--line); }
+  .cat {
+    display: grid; grid-template-columns: 3.2rem 1fr auto; align-items: baseline; gap: 12px;
+    padding: 18px 0; background: none;
+    transition: transform var(--m-out) var(--ease);
+  }
+  .cat:hover { transform: translateY(-2px); transition-duration: var(--m-in); }
+  .cat:hover .cat__label { color: var(--accent); }
+  .cat__num { font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+  .cat__label { font-size: clamp(1.5rem, 5.5vw, 2.4rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; transition: color var(--m-out) var(--ease); }
+  .cat__count { font-size: 0.88rem; font-weight: 500; color: var(--muted); white-space: nowrap; }
+</style>

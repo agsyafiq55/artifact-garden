@@ -34,3 +34,31 @@ export async function nodeForArtifact(artifactId: string) {
 }
 
 export const trackHref = (t: Track, nodeId?: string) => withBase(`/tracks/${t.id}${nodeId ? `#${nodeId}` : ''}`);
+
+export const UNSORTED = 'unsorted';
+
+/** Tracks, sections and nodes that hold at least one artifact, with the artifact entries resolved. */
+export async function artifactTree() {
+  const { getArtifacts } = await import('./content');
+  const artifacts = await getArtifacts();
+  const byId = new Map(artifacts.map((a) => [a.id, a]));
+  const placed = new Set<string>();
+  const tracks = (await getTracks())
+    .map((t) => ({
+      track: t,
+      sections: t.data.sections
+        .map((s) => ({
+          section: s,
+          concepts: s.nodes
+            .map((n) => ({ node: n, artifacts: n.artifacts.map((r) => byId.get(r.id)).filter((a) => !!a) }))
+            .filter((c) => c.artifacts.length > 0),
+        }))
+        .filter((s) => s.concepts.length > 0),
+    }))
+    .filter((t) => t.sections.length > 0);
+  for (const t of tracks) for (const s of t.sections) for (const c of s.concepts) for (const a of c.artifacts) placed.add(a.id);
+  const unsorted = artifacts.filter((a) => !placed.has(a.id));
+  return { tracks, unsorted, total: artifacts.length };
+}
+
+export const countLabel = (n: number) => `${n} ${n === 1 ? 'artifact' : 'artifacts'}`;

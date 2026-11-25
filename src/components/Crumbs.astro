@@ -1,0 +1,13 @@
+---
+interface Props { trail: { label: string; href: string }[] }
+const { trail } = Astro.props;
+---
+<nav class="crumbs" aria-label="Breadcrumb">
+  {trail.map((c) => <a href={c.href}>{c.label}</a>)}
+</nav>
+
+<style>
+  .crumbs { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-bottom: 18px; }
+  .crumbs a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 500; color: var(--muted); }
+  .crumbs a + a::before { content: '/'; color: var(--faint); margin-right: 18px; }
+</style>
