@@ -3,6 +3,8 @@ import { render } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import { getTerms, getArtifactsByTermId, backlinks, type Term } from '../../lib/content';
 import { withBase } from '../../lib/url';
+import { TOPICS } from '../../lib/topics';
+import Crumbs from '../../components/Crumbs.astro';
 
 export async function getStaticPaths() {
   const terms = await getTerms();
@@ -21,52 +23,95 @@ const { Content } = await render(term);
 const hasBody = !!term.body?.trim();
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const inlineCode = (s: string) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
+const index = all.findIndex((t) => t.id === term.id);
+const prev = index > 0 ? all[index - 1] : null;
+const next = index < all.length - 1 ? all[index + 1] : null;
+const refs = [
+  { label: 'See also', items: relatedIds.map((id) => byId.get(id)).filter((t) => !!t).map((t) => ({ text: t!.data.term, href: withBase(`/terms/${t!.id}`) })) },
+  { label: 'Compare', items: contrastIds.map((id) => byId.get(id)).filter((t) => !!t).map((t) => ({ text: t!.data.term, href: withBase(`/terms/${t!.id}`) })) },
+  { label: 'Explained in', items: sources.map((a) => ({ text: a.data.title, href: withBase(`/a/${a.id}`) })) },
+].filter((r) => r.items.length > 0);
 ---
 <Base title={d.term} description={d.definition} indexed>
-  <header class="page-head">
-    <h1>{d.term}</h1>
-    {d.aka.length > 0 && <p class="aka">also {d.aka.join(', ')}</p>}
-  </header>
+  <article class="dict">
+    <Crumbs trail={[{ label: 'Glossary', href: withBase('/terms') }]} />
 
-  <section class="row first">
-    <div class="row__body">
-      <p class="definition">{d.definition}</p>
-      <div class="pair">
-        <p class="analogy">{d.analogy}</p>
-        <p class="example" set:html={inlineCode(d.example)} />
+    <header class="entry__head">
+      <h1 class="headword">{d.term}</h1>
+      <p class="meta">
+        <span class="domain">{TOPICS[d.topic].label}</span>
+        {d.aka.length > 0 && <span class="aka">also called <i>{d.aka.join(', ')}</i></span>}
+      </p>
+    </header>
+
+    <section class="sense">
+      <span class="sense__num" aria-hidden="true">1</span>
+      <div class="sense__body">
+        <p class="label">Definition</p>
+        <p class="definition">{d.definition}</p>
+        <dl class="gloss">
+          <div><dt>Like</dt><dd class="analogy">{d.analogy}</dd></div>
+          <div><dt>Example</dt><dd class="example" set:html={inlineCode(d.example)} /></div>
+        </dl>
+        {hasBody && <div class="prose notes"><Content /></div>}
       </div>
-      {hasBody && <div class="prose body"><Content /></div>}
-    </div>
-  </section>
+    </section>
 
-  {relatedIds.length > 0 && (
-    <section class="row" data-pagefind-ignore>
-      <h2 class="row__label">Related</h2>
-      <ul class="row__body words">{relatedIds.map((id) => byId.get(id) && <li><a href={withBase(`/terms/${id}`)}>{byId.get(id)!.data.term}</a></li>)}</ul>
-    </section>
-  )}
-  {contrastIds.length > 0 && (
-    <section class="row" data-pagefind-ignore>
-      <h2 class="row__label">Often confused with</h2>
-      <ul class="row__body words">{contrastIds.map((id) => byId.get(id) && <li><a class="contrast" href={withBase(`/terms/${id}`)}>{byId.get(id)!.data.term}</a></li>)}</ul>
-    </section>
-  )}
-  {sources.length > 0 && (
-    <section class="row" data-pagefind-ignore>
-      <h2 class="row__label">Learned from</h2>
-      <ul class="row__body words">{sources.map((a) => <li><a href={withBase(`/a/${a.id}`)}>{a.data.title}</a></li>)}</ul>
-    </section>
-  )}
+    {refs.length > 0 && (
+      <dl class="refs" data-pagefind-ignore>
+        {refs.map((r) => (
+          <div>
+            <dt>{r.label}</dt>
+            <dd>
+              {r.items.map((it, j) => (<><a href={it.href}>{it.text}</a>{j < r.items.length - 1 && <span class="sep">, </span>}</>))}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    )}
+
+    <nav class="turn" aria-label="Neighbouring entries" data-pagefind-ignore>
+      {prev ? <a class="turn__prev" href={withBase(`/terms/${prev.id}`)}><span>Previous entry</span>{prev.data.term}</a> : <span></span>}
+      {next && <a class="turn__next" href={withBase(`/terms/${next.id}`)}><span>Next entry</span>{next.data.term}</a>}
+    </nav>
+  </article>
 </Base>
 
 <style>
-  .aka { color: var(--muted); font-size: 1.05rem; margin: 14px 0 0; }
-  .row.first { border-top: 0; margin-top: 8px; }
-  .definition { font-size: clamp(1.45rem, 4.4vw, 2.1rem); font-weight: 500; letter-spacing: -0.02em; line-height: 1.2; max-width: 26ch; margin: 0 0 36px; }
-  .pair { display: grid; gap: 20px; }
-  @media (min-width: 760px) { .pair { grid-template-columns: 1fr 1fr; gap: var(--col-gap); } }
-  .analogy, .example { margin: 0; font-size: 1rem; }
-  .analogy { padding-top: 10px; border-top: 2px solid var(--accent); }
-  .example { padding-top: 10px; border-top: 2px solid var(--rule); color: var(--muted); }
-  .body { margin-top: 32px; }
+  .dict { max-width: 720px; }
+  .entry__head { padding-bottom: 22px; border-bottom: 1px solid var(--line); }
+  .headword { font-size: clamp(2.6rem, 10vw, 4.8rem); letter-spacing: -0.045em; line-height: 0.95; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; margin: 16px 0 0; }
+  .domain { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+  .aka { color: var(--muted); }
+  .aka i { color: var(--ink); }
+
+  .sense { display: grid; grid-template-columns: 2rem 1fr; gap: 0 8px; padding: 28px 0 8px; }
+  .sense__num { font-size: 1.1rem; font-weight: 700; color: var(--accent); line-height: 1.9; }
+  .label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); margin: 6px 0 8px; }
+  .definition { font-size: clamp(1.35rem, 4.6vw, 1.75rem); font-weight: 500; letter-spacing: -0.02em; line-height: 1.3; margin: 0 0 26px; max-width: 32ch; }
+  .gloss { margin: 0; display: grid; gap: 16px; }
+  .gloss div, .refs div { display: grid; grid-template-columns: 6.5rem 1fr; gap: 12px; align-items: baseline; }
+  dt { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); }
+  dd { margin: 0; }
+  .analogy { font-style: italic; }
+  .example { color: var(--muted); }
+  .notes { margin-top: 24px; }
+
+  .refs { margin: 28px 0 0; padding: 20px 0 0 40px; border-top: 1px solid var(--line); display: grid; gap: 10px; }
+  .refs dd { line-height: 2.4; }
+  .refs a { font-weight: 600; padding: 10px 0; }
+  .sep { color: var(--faint); }
+
+  .turn { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 48px; padding-top: 16px; border-top: 2px solid var(--rule); }
+  .turn a { display: grid; gap: 2px; padding: 6px 0; font-weight: 700; font-size: 1.05rem; background: none; }
+  .turn a span { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); }
+  .turn a:hover { color: var(--accent); }
+  .turn__next { text-align: right; justify-self: end; }
+
+  @media (max-width: 520px) {
+    .sense { grid-template-columns: 1.4rem 1fr; }
+    .gloss div, .refs div { grid-template-columns: 1fr; gap: 2px; }
+    .refs { padding-left: 0; }
+  }
 </style>
