@@ -55,7 +55,7 @@ Read these three files before you write any text or draw anything:
   - Every new term in the interactive part was already explained above it.
   - Every fact on the page traces to a source in your research notes.
   - It works at 375px wide. It uses one column and tap targets of at least 44px. It has no hover-only interactions and no sideways scroll.
-  - It supports light and dark mode through the CSS variables, and it keeps the template's `applyThemeFromQuery()` function and call.
+  - It supports light and dark mode through the CSS variables, and it keeps the template's `applyThemeFromQuery()` and `embedInSite()` functions and calls. Inside the site, `embedInSite()` hides the title and Sources section, which the site page already shows, and sizes the frame so only the page scrolls.
   - External files come only from cdnjs.cloudflare.com, cdn.jsdelivr.net, unpkg.com, esm.sh and Google Fonts, pinned to exact versions. Prefer vanilla JS. Every outside link has `target="_blank" rel="noopener"`.
 - Write `src/content/artifacts/<slug>.md`:
   ```yaml

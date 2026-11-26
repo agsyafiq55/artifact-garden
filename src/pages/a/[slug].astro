@@ -84,6 +84,17 @@ const place = await nodeForArtifact(artifact.id);
   sync();
   window.addEventListener('ag:theme', sync);
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', sync);
+
+  // The artifact reports its height, so the frame grows to fit and only the page scrolls.
+  window.addEventListener('message', (e) => {
+    if (e.source !== frame.contentWindow || !e.data || typeof e.data !== 'object') return;
+    const { type, height, top } = e.data as { type?: string; height?: number; top?: number };
+    if (type === 'ag:height' && Number.isFinite(height)) frame.style.height = `${Math.max(240, Math.ceil(height!)) + frame.offsetHeight - frame.clientHeight}px`;
+    if (type === 'ag:scroll' && Number.isFinite(top)) {
+      const header = (document.querySelector('.site-header') as HTMLElement | null)?.offsetHeight ?? 0;
+      window.scrollTo({ top: frame.getBoundingClientRect().top + window.scrollY + top! - header - 12, behavior: 'smooth' });
+    }
+  });
 </script>
 
 <style>
@@ -94,7 +105,7 @@ const place = await nodeForArtifact(artifact.id);
   .lede { font-size: 1.2rem; line-height: 1.4; max-width: 46ch; margin: 20px 0 0; }
   .frame-wrap { margin: 32px calc(-1 * var(--gutter)) 0; }
   @media (min-width: 760px) { .frame-wrap { margin-inline: 0; } }
-  iframe { display: block; width: 100%; height: min(80vh, 920px); min-height: 540px; border: 0; border-block: 2px solid var(--rule); background: var(--bg); }
+  iframe { display: block; width: 100%; height: 80vh; border: 0; border-block: 2px solid var(--rule); background: var(--bg); }
   @media (min-width: 760px) { iframe { border: 2px solid var(--rule); } }
   .frame-wrap:focus-within iframe, iframe:focus { outline: 3px solid var(--accent); outline-offset: -3px; }
   .full { display: inline-flex; align-items: center; min-height: 44px; margin: 8px var(--gutter) 0; font-weight: 500; font-size: 0.92rem; }

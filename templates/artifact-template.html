@@ -30,7 +30,7 @@
   h1 { font-size: 1.9rem; line-height: 1.15; margin: 0 0 8px; }
   h2 { font-size: 1.15rem; margin: 0 0 10px; }
   p.lede { color: var(--muted); margin: 0 0 20px; }
-  :root[data-embedded] main > h1 { display: none; }
+  :root[data-embedded] main > h1, :root[data-embedded] #sources, :root[data-embedded] .toc li:has(a[href="#sources"]) { display: none; }
   code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .86em; }
   .card { background: var(--surface); border: 1px solid var(--line); border-radius: 0; padding: 16px; }
   button { font: 600 .95rem 'Inter Tight', sans-serif; min-height: 44px; padding: 10px 16px; border-radius: 0; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
@@ -227,10 +227,28 @@
   function applyThemeFromQuery() {
     const theme = new URLSearchParams(location.search).get('theme');
     if (theme === 'dark' || theme === 'light') document.documentElement.dataset.theme = theme;
-    // Inside the site's frame, the site page already shows the title.
-    if (window.self !== window.top) document.documentElement.dataset.embedded = 'true';
   }
   applyThemeFromQuery();
+
+  // Inside the site's frame: the site page shows the title and references, sizes the frame to fit,
+  // and scrolls itself when a contents link is tapped, so the reader sees one scrollbar.
+  function embedInSite() {
+    if (window.self === window.top) return;
+    document.documentElement.dataset.embedded = 'true';
+    const post = (msg) => window.parent.postMessage(msg, '*');
+    const report = () => post({ type: 'ag:height', height: Math.ceil(document.body.getBoundingClientRect().height) });
+    new ResizeObserver(report).observe(document.body);
+    window.addEventListener('load', report);
+    document.addEventListener('click', (e) => {
+      const a = e.target.closest('a[href^="#"]');
+      const id = a && a.getAttribute('href').slice(1);
+      const target = id && document.getElementById(id);
+      if (!target) return;
+      e.preventDefault();
+      post({ type: 'ag:scroll', top: Math.round(target.getBoundingClientRect().top + window.scrollY) });
+    });
+  }
+  embedInSite();
 
   // Guess first: reveal the answer after one tap.
   document.querySelectorAll('[data-guess]').forEach((box) => {

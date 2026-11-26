@@ -67,4 +67,4 @@ references:
 - `title` is the source's own title. Keep its capitals, but replace curly quotes with straight ones and replace a dash with a comma, because `npm run check` rejects them.
 - `note` is optional. It is one sentence on what the reader gets from the source, and it follows `WRITING.md`.
 
-The artifact HTML ends with the same list in its Sources section. The template shows the markup. `npm run check` fails when the two lists differ, when a link lacks `target="_blank"`, or when an artifact has fewer than 2 references. The site shows the list again under the artifact.
+The artifact HTML ends with the same list in its Sources section. The template shows the markup. `npm run check` fails when the two lists differ, when a link lacks `target="_blank"`, or when an artifact has fewer than 2 references. Inside the site, the artifact hides its Sources section and the site page shows the list under the artifact instead.

@@ -51,6 +51,9 @@ function checkSelfContained(artHtml) {
     if (!/function applyThemeFromQuery\(\)/.test(html) || !/^\s*applyThemeFromQuery\(\);/m.test(html)) {
       err(file, 'missing applyThemeFromQuery() from templates/artifact-template.html (the site passes ?theme= to the iframe)');
     }
+    if (!/function embedInSite\(\)/.test(html) || !/^\s*embedInSite\(\);/m.test(html)) {
+      err(file, 'missing embedInSite() from templates/artifact-template.html (it sizes the site frame and hides the duplicate title and sources)');
+    }
     const refs = [...html.matchAll(/<(?:script|link|img|iframe|source|video|audio)\b[^>]*?\s(?:src|href)=["']([^"']+)["']/gi)].map((m) => m[1]);
     refs.push(...[...html.matchAll(/\bimport\s+(?:[^'"]*?\sfrom\s+)?["']([^"']+)["']/g)].map((m) => m[1]));
     for (const ref of refs) {
