@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tokens and JWT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff; --surface: #f3f3f1; --ink: #111111; --muted: #505050; --line: #dcdcdc;
+    --accent: #e2231a; --ok: #17783a; --bad: #e2231a; --warn: #a96d00;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f0f0f; --surface: #181818; --ink: #f2f2f2; --muted: #a6a6a6; --line: #2e2e2e;
+      --accent: #ff3b2f; --ok: #4cc27a; --bad: #ff3b2f; --warn: #e0a83a; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f0f0f; --surface: #181818; --ink: #f2f2f2; --muted: #a6a6a6; --line: #2e2e2e;
+    --accent: #ff3b2f; --ok: #4cc27a; --bad: #ff3b2f; --warn: #e0a83a; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 'Inter Tight', system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1, h2 { font-family: 'Inter Tight', Helvetica, Arial, sans-serif; font-weight: 700; letter-spacing: -0.03em; }
+  h1 { font-size: 1.9rem; line-height: 1.15; margin: 0 0 8px; }
+  h2 { font-size: 1.15rem; margin: 0 0 10px; }
+  p.lede { color: var(--muted); margin: 0 0 20px; }
+  :root[data-embedded] main > h1, :root[data-embedded] #sources, :root[data-embedded] .toc li:has(a[href="#sources"]) { display: none; }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .86em; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 0; padding: 16px; }
+  button { font: 600 .95rem 'Inter Tight', sans-serif; min-height: 44px; padding: 10px 16px; border-radius: 0; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--surface); border-color: transparent; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button:not(:disabled):hover { border-color: var(--ink); }
+  button:not(:disabled):active { transform: scale(.98); }
+  h2 { font-size: 1.35rem; margin: 0 0 12px; letter-spacing: -0.025em; }
+  h3 { font-size: 1rem; margin: 0 0 6px; letter-spacing: -0.01em; }
+  p { margin: 0 0 12px; }
+  section.part { padding-top: 22px; margin-top: 34px; border-top: 2px solid var(--ink); }
+  .num { color: var(--accent); margin-right: 8px; }
+  .toc { display: flex; flex-wrap: wrap; gap: 0 18px; margin: 0 0 8px; padding: 0; list-style: none; }
+  .toc a { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); font-weight: 600; text-decoration: none; border-bottom: 2px solid transparent; }
+  .toc a:hover { border-bottom-color: var(--accent); }
+  .pair { display: grid; gap: 12px; margin: 16px 0; }
+  @media (min-width: 560px) { .pair { grid-template-columns: 1fr 1fr; } }
+  .role { border-top: 4px solid var(--ink); }
+  .role.client { border-top-color: var(--accent); }
+  .role ul { margin: 0; padding-left: 18px; }
+  .role li { margin-bottom: 4px; }
+  .analogy { border-left: 4px solid var(--accent); padding: 12px 14px; background: var(--surface); margin: 16px 0; }
+  .diagram { width: 100%; height: auto; display: block; margin: 8px 0 16px; }
+  .diagram text { font: 600 13px 'Inter Tight', sans-serif; fill: var(--ink); }
+  .diagram .soft { fill: var(--muted); font-weight: 500; }
+  .diagram .box { fill: var(--surface); stroke: var(--ink); stroke-width: 2; }
+  .diagram .req { stroke: var(--accent); stroke-width: 2.5; }
+  .diagram .res { stroke: var(--ink); stroke-width: 2.5; }
+  ol.steps { padding-left: 22px; margin: 0 0 16px; }
+  ol.steps li { margin-bottom: 10px; }
+  pre { margin: 6px 0 14px; padding: 12px 14px; background: var(--surface); border-left: 4px solid var(--line); overflow-x: auto; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre; }
+  pre.request { border-left-color: var(--accent); }
+  pre.response { border-left-color: var(--ink); }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0 14px; font-size: .92rem; }
+  th, td { text-align: left; padding: 8px 6px; border-top: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 700; white-space: nowrap; }
+  ol.todo { padding-left: 22px; margin: 0 0 16px; color: var(--muted); }
+  .verdict { margin: 16px 0; padding: 14px 16px; border-left: 4px solid var(--line); background: var(--surface); }
+  .verdict.good { border-color: var(--ok); }
+  .verdict.warn { border-color: var(--warn); }
+  .verdict.bad { border-color: var(--bad); }
+  .verdict b { display: block; font-size: 1.05rem; margin-bottom: 4px; }
+  ul.remember { padding-left: 20px; margin: 0 0 16px; }
+  ul.remember li { margin-bottom: 8px; }
+  details { border-top: 1px solid var(--line); }
+  details:last-of-type { border-bottom: 1px solid var(--line); }
+  summary { cursor: pointer; padding: 12px 0; min-height: 44px; font-weight: 600; list-style-position: outside; }
+  details p { color: var(--muted); }
+  .guess { margin: 0 0 20px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); }
+  .guess p { margin: 0 0 10px; }
+  .guess .options { display: grid; gap: 8px; }
+  .guess .options button { text-align: left; }
+  .guess button[aria-pressed="true"] { border-color: var(--ink); }
+  .guess button.right { border-left: 4px solid var(--ok); }
+  .guess button.wrong { border-left: 4px solid var(--bad); }
+  .guess .answer { margin: 12px 0 0; }
+  .mixup { margin: 16px 0; padding: 12px 14px; border: 1px solid var(--line); border-left: 4px solid var(--warn); }
+  .mixup p { margin: 0 0 6px; }
+  .mixup p:last-child { margin: 0; }
+  figure { margin: 8px 0 20px; }
+  figcaption { color: var(--muted); font-size: .92rem; margin-top: 6px; }
+  .diagram .edge { fill: none; stroke: var(--ink); stroke-width: 2; }
+  .diagram .edge.async { stroke-dasharray: 6 5; }
+  .diagram .tip { fill: var(--ink); }
+  .diagram .now .box, .diagram .box.now, .diagram .lit .box, .diagram .box.lit { stroke: var(--accent); stroke-width: 3; }
+  .diagram .now .edge, .diagram .edge.now, .diagram .lit .edge, .diagram .edge.lit { stroke: var(--accent); stroke-width: 3; }
+  .stepper.js [data-s], .stepper.js [data-only] { transition: opacity .25s ease; }
+  .stepper.js .off { opacity: 0; pointer-events: none; }
+  .stepper.js ol.captions { list-style: none; padding-left: 0; }
+  .stepper.js ol.captions li { display: none; }
+  .stepper.js ol.captions li.current { display: list-item; }
+  ol.captions { padding-left: 22px; margin: 4px 0 8px; min-height: 3em; }
+  .step-controls { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+  .step-controls .count { flex: 1; text-align: center; color: var(--muted); font-size: .92rem; }
+  button.ref { all: unset; font-weight: 700; border-bottom: 2px dotted var(--accent); cursor: pointer; }
+  button.ref:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button.ref.lit { background: var(--surface); }
+  h3.after-q { margin-top: 24px; }
+  ol.sources { padding-left: 22px; margin: 0; }
+  ol.sources li { margin-bottom: 12px; }
+  ol.sources a { color: var(--ink); font-weight: 600; text-decoration-color: var(--accent); text-underline-offset: 3px; overflow-wrap: anywhere; }
+  ol.sources .pub, ol.sources .note { display: block; color: var(--muted); font-size: .92rem; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+  .diagram .lbl { font-size: 12px; fill: var(--ink); font-weight: 600; paint-order: stroke; stroke: var(--bg); stroke-width: 5px; stroke-linejoin: round; }
+  .diagram .code { font: 500 12px ui-monospace, SFMono-Regular, Menlo, monospace; fill: var(--ink); }
+  .ctl { margin: 0 0 14px; }
+  .ctl-label { font-weight: 700; margin: 0 0 6px; }
+  .seg { display: flex; flex-wrap: wrap; gap: 8px; }
+  .seg button[aria-pressed="true"] { border-color: var(--ink); background: var(--bg); box-shadow: inset 0 -3px 0 var(--accent); }
+  button.send { width: 100%; margin: 4px 0 14px; }
+  ul.parts { padding-left: 20px; margin: 0 0 12px; }
+  ul.parts li { margin-bottom: 8px; }
+  ol.notes { padding-left: 22px; margin: 0 0 16px; }
+  ol.notes li { margin-bottom: 8px; }
+  .jwt { font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; background: var(--bg); padding: 10px 12px; border: 1px solid var(--line); margin: 0 0 12px; }
+  .jwt .h { color: var(--accent); }
+  .jwt .p { color: var(--ok); }
+  .jwt .s { color: var(--warn); }
+  .jwt .dot { color: var(--ink); font-weight: 700; }
+  .keyrow { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .88rem; color: var(--muted); margin: -4px 0 12px; }
+  .keyrow b.h { color: var(--accent); } .keyrow b.p { color: var(--ok); } .keyrow b.s { color: var(--warn); }
+  ol.flowlog { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  ol.flowlog li { padding: 8px 10px; background: var(--bg); border-left: 3px solid var(--line); font-size: .92rem; }
+  ol.flowlog li.ok { border-color: var(--ok); }
+  ol.flowlog li.warn { border-color: var(--warn); }
+  ol.flowlog li.bad { border-color: var(--bad); }
+  ol.flowlog code { display: block; margin-top: 4px; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+  ol.flowlog .empty { border: 0; background: none; color: var(--muted); padding-left: 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Tokens and JWT</h1>
+  <p class="lede">After you log in, an app needs a way to prove it's you on every later request. Servers hand the app a token for that job, and the most common format is the JSON Web Token, or JWT. This page shows what a token is, takes a JWT apart, then lets you try to forge one.</p>
+
+  <div class="guess" data-guess>
+    <p><b>Guess first.</b> You paste a JWT into a decoder, and you don't have the server's key. Can you read the user ID inside it?</p>
+    <div class="options">
+      <button type="button" data-correct>Yes, anyone can read it</button>
+      <button type="button">No, it is encrypted</button>
+    </div>
+    <p class="answer" hidden>The payload of a JWT is only encoded, so anyone can decode and read it. The key is needed to make or check the signature, not to read the claims. Part 1 explains why.</p>
+  </div>
+
+  <ul class="toc">
+    <li><a href="#idea">Overview of tokens and JWTs</a></li>
+    <li><a href="#how">How an API checks a JWT</a></li>
+    <li><a href="#try">Try to forge an admin token</a></li>
+    <li><a href="#check">Practice questions</a></li>
+    <li><a href="#sources">Sources and further reading</a></li>
+  </ul>
+
+  <section class="part" id="idea">
+    <h2><span class="num">1</span>Overview of tokens and JWTs</h2>
+    <p>You log in to a shop app once, then browse your orders for an hour. HTTP is stateless, so the API remembers nothing between requests. After the login, the server gives the app a token, and the app sends it in the <code>Authorization</code> header of every request.</p>
+    <p>Tokens come in two kinds:</p>
+    <ul class="parts">
+      <li>An <b>opaque token</b> is a random string with no meaning of its own. The server keeps a table from token to user and looks the token up on every request.</li>
+      <li>A <b>JSON Web Token</b>, or <b>JWT</b>, carries the facts itself. RFC 7519 suggests you say it like the word "jot".</li>
+    </ul>
+    <p>A JWT is three parts joined by dots: a header, a payload and a signature. The payload holds <b>claims</b>, which are named facts about the user and the token, such as <code>sub</code> for the user ID and <code>exp</code> for the expiry time. The <b>signature</b> is computed from the header and payload with a key that only the server knows. If anyone changes one character of the header or payload, the signature no longer matches.</p>
+    <p>The header and payload are written in <b>base64url</b>, an encoding that turns any bytes into letters, digits, <code>-</code> and <code>_</code>, so the token fits safely in a URL or a header. Encoding is not encryption. Anyone can turn base64url back into the original text.</p>
+    <div class="analogy">Think of a festival. An opaque token is a cloakroom ticket: a number that means nothing until staff look it up. A JWT is a wristband printed with your name and "VIP until Sunday", sealed with a hologram that only the organiser can make. Each gate reads the band and checks the hologram without calling the office. The analogy stops at the hologram. Anyone can recognise a hologram, but checking an HS256 signature needs the same secret key that made it.</div>
+    <div class="mixup">
+      <p><b>Common mix-up</b></p>
+      <p>"A JWT is encrypted, so I can put an email address or a password in it."</p>
+      <p>A normal JWT is signed, not encrypted. The signature stops anyone changing the claims, but anyone holding the token can read them. jwt.io warns against putting secrets in the payload.</p>
+    </div>
+  </section>
+
+  <section class="part" id="how">
+    <h2><span class="num">2</span>How an API checks a JWT</h2>
+    <p>The API never needs a database to check a JWT. It needs only its key and a clock. Tap Next to follow the checks.</p>
+    <figure class="stepper" data-stepper>
+      <svg class="diagram" viewBox="0 0 340 300" role="img" aria-label="An API splits a JWT into header, payload and signature, checks the algorithm, recomputes the signature, checks the claims, then trusts the user ID and role">
+        <defs>
+          <marker id="tip-jwt" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="tip" d="M0 0 10 5 0 10z"/></marker>
+        </defs>
+        <g data-s="1">
+          <rect class="box" x="4" y="8" width="100" height="40"/><text x="54" y="33" text-anchor="middle">header</text>
+          <text x="112" y="34" text-anchor="middle">.</text>
+          <rect class="box" x="120" y="8" width="100" height="40"/><text x="170" y="33" text-anchor="middle">payload</text>
+          <text x="228" y="34" text-anchor="middle">.</text>
+          <rect class="box" x="236" y="8" width="100" height="40"/><text x="286" y="33" text-anchor="middle">signature</text>
+        </g>
+        <g data-s="2">
+          <path class="edge" d="M54 48V74" marker-end="url(#tip-jwt)"/>
+          <text x="54" y="94" text-anchor="middle">alg is HS256,</text>
+          <text x="54" y="112" text-anchor="middle">on the allowlist</text>
+        </g>
+        <g data-s="3">
+          <rect class="box" x="4" y="128" width="332" height="46"/>
+          <text x="170" y="147" text-anchor="middle">HMAC-SHA256 of header.payload</text>
+          <text x="170" y="165" text-anchor="middle">with the server's secret key</text>
+          <path class="edge" d="M286 48V124" marker-end="url(#tip-jwt)"/>
+          <text class="lbl" x="280" y="92" text-anchor="end">must equal</text>
+        </g>
+        <g data-s="4">
+          <path class="edge" d="M170 174V194" marker-end="url(#tip-jwt)"/>
+          <text class="lbl" x="178" y="188">match</text>
+          <rect class="box" x="4" y="198" width="332" height="40"/>
+          <text x="170" y="223" text-anchor="middle">exp is in the future, iss and aud expected</text>
+        </g>
+        <g data-s="5">
+          <path class="edge" d="M170 238V254" marker-end="url(#tip-jwt)"/>
+          <rect class="box" x="4" y="258" width="332" height="40"/>
+          <text x="170" y="283" text-anchor="middle">Trust sub and role. No database lookup.</text>
+        </g>
+      </svg>
+      <ol class="captions">
+        <li>The API splits the token at its two dots into the header, the payload and the signature.</li>
+        <li>It decodes the header and reads alg, the signing algorithm. It accepts only the algorithms it expects, here HS256, and rejects anything else.</li>
+        <li>It computes HMAC-SHA256 over the header and payload with its own secret key, and compares the result with the signature. A changed claim or a wrong key gives a different result.</li>
+        <li>It decodes the payload and checks the claims: exp must be in the future, and iss and aud must name the issuer and audience it expects.</li>
+        <li>Only now does it trust the claims, such as sub and role. It never asked a database.</li>
+      </ol>
+      <figcaption>An API checks a JWT with its key and a clock, so every claim it trusts was signed by the server.</figcaption>
+    </figure>
+
+    <h3>A real JWT, decoded</h3>
+    <p>The shop's login server issued this token. The colors mark the three parts.</p>
+    <div class="jwt"><span class="h">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9</span><span class="dot">.</span><span class="p">eyJpc3MiOiJhdXRoLnNob3AuZXhhbXBsZSIsInN1YiI6InVzZXItMjQ4MSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzk1NjUxMjAwLCJleHAiOjE3OTU2NTQ4MDB9</span><span class="dot">.</span><span class="s">q91HHynU7gDZ143cKaWZN3LdR0qdI8oSEjjzfogxjGE</span></div>
+    <p>The header decodes to this.</p>
+    <pre><code>{"alg": "HS256", "typ": "JWT"}</code></pre>
+    <p>The payload decodes to these claims.</p>
+    <pre><code>{
+  "iss": "auth.shop.example",
+  "sub": "user-2481",
+  "role": "user",
+  "iat": 1795651200,
+  "exp": 1795654800
+}</code></pre>
+    <p>The app sends the whole token with each request.</p>
+    <pre class="request"><code>GET /orders HTTP/1.1
+Host: api.shop.example
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3Mi...</code></pre>
+    <ol class="notes">
+      <li>The signature is the base64url of HMAC-SHA256 over the first two parts and the dot between them, keyed with the server's secret.</li>
+      <li><code>iat</code> and <code>exp</code> are seconds since 1 January 1970. Here exp is 3600 seconds after iat, so the token lasts one hour.</li>
+      <li><code>role</code> is a claim the shop made up. RFC 7519 lets apps add their own claims next to the registered ones.</li>
+    </ol>
+
+    <h3>The parts of every JWT</h3>
+    <pre><code>base64url(header) . base64url(payload) . base64url(signature)</code></pre>
+    <p>RFC 7519 registers these claim names. Each one is optional, and an app decides which it needs.</p>
+    <table>
+      <tr><th>Claim</th><th>Means</th></tr>
+      <tr><td><code>iss</code></td><td>Who issued the token</td></tr>
+      <tr><td><code>sub</code></td><td>Who the token is about, such as a user ID</td></tr>
+      <tr><td><code>aud</code></td><td>Who the token is for. An API rejects a token whose aud doesn't name it.</td></tr>
+      <tr><td><code>exp</code></td><td>When the token stops being valid</td></tr>
+      <tr><td><code>iat</code></td><td>When the token was issued</td></tr>
+      <tr><td><code>jti</code></td><td>A unique ID for this token</td></tr>
+    </table>
+    <p>HS256 uses one shared secret to sign and to check, so every API that checks tokens could also make them. RS256 and ES256 sign with a private key and check with a public key, so an API can check tokens without being able to make them.</p>
+
+    <h3>Opaque tokens and JWTs side by side</h3>
+    <table>
+      <tr><th></th><th>Opaque token</th><th>JWT</th></tr>
+      <tr><th>Holds</th><td>A random ID</td><td>Signed claims</td></tr>
+      <tr><th>The API checks it by</th><td>Looking it up in a store</td><td>Checking the signature and exp</td></tr>
+      <tr><th>Revoking it early</th><td>Delete the row, and it stops at once</td><td>Hard. It stays valid until exp unless the API checks a denylist.</td></tr>
+    </table>
+    <p>That last row is why access tokens that are JWTs expire fast, often within an hour. The app also gets a <b>refresh token</b>, a long-lived token that it sends only to the login server's token endpoint to get a fresh access token. The login server checks the refresh token against its own records, so a banned user stops getting new access tokens.</p>
+  </section>
+
+  <section class="part" id="try">
+    <h2><span class="num">3</span>Try to forge an admin token</h2>
+    <p>You hold the user token from part 2. The endpoint <code>GET /admin/reports</code> only answers tokens whose role claim is admin. Change the token, then send it and watch the API's checks.</p>
+    <ol class="todo">
+      <li>Predict, then check. Change the role claim to admin, keep the original signature, and predict the status code before you tap Send.</li>
+      <li>Re-sign the edited token with a guessed key, then try removing the signature with alg none.</li>
+      <li>Send the untouched user token two hours after login.</li>
+      <li>Re-sign with the server's key, and think about what that means for where the key lives.</li>
+    </ol>
+    <section class="card">
+      <div class="ctl">
+        <p class="ctl-label">The role claim</p>
+        <div class="seg" data-key="role">
+          <button type="button" data-v="user" aria-pressed="true">user</button>
+          <button type="button" data-v="admin" aria-pressed="false">admin</button>
+        </div>
+      </div>
+      <div class="ctl">
+        <p class="ctl-label">The signature</p>
+        <div class="seg" data-key="sig">
+          <button type="button" data-v="keep" aria-pressed="true">Keep the original</button>
+          <button type="button" data-v="guess" aria-pressed="false">Re-sign with the key "secret"</button>
+          <button type="button" data-v="server" aria-pressed="false">Re-sign with the server's key</button>
+          <button type="button" data-v="none" aria-pressed="false">Remove it, set alg to none</button>
+        </div>
+      </div>
+      <div class="ctl">
+        <p class="ctl-label">When the API checks it</p>
+        <div class="seg" data-key="when">
+          <button type="button" data-v="soon" aria-pressed="true">10 minutes after login</button>
+          <button type="button" data-v="late" aria-pressed="false">2 hours after login</button>
+        </div>
+      </div>
+      <h3>Your token</h3>
+      <div class="jwt" id="token"></div>
+      <div class="keyrow"><span><b class="h">header</b></span><span><b class="p">payload</b></span><span><b class="s">signature</b></span></div>
+      <pre class="live"><code id="decoded"></code></pre>
+      <button type="button" class="primary send" id="send">Send GET /admin/reports</button>
+      <h3>The API's checks</h3>
+      <ol class="flowlog" id="log"><li class="empty">Each check appears here when you send the token.</li></ol>
+    </section>
+    <div class="verdict" id="verdict" aria-live="polite"><b>Nothing sent yet</b>Change the role claim to admin, predict the status code, then tap Send.</div>
+  </section>
+
+  <section class="part" id="check">
+    <h2><span class="num">4</span>Practice questions</h2>
+    <details>
+      <summary>What are the three parts of a JWT, and what separates them?</summary>
+      <p>The header, the payload and the signature, each base64url-encoded and joined by dots. The header names the algorithm, the payload holds the claims, and the signature covers both.</p>
+    </details>
+    <details>
+      <summary>Why can't a user change their role claim from user to admin?</summary>
+      <p>The signature was computed over the original header and payload with the server's secret. A changed payload gives a different HMAC, and the user can't compute the right one without the key, so the API rejects the token.</p>
+    </details>
+    <details>
+      <summary>You ban a user at 10:00, but their JWT access token expires at 10:45. What happens at 10:15, and what can you do?</summary>
+      <p>The API still accepts the token, because it checks only the signature and exp. Keep access tokens short-lived, refuse the user's next refresh token, or keep a denylist of jti values until those tokens expire.</p>
+    </details>
+    <details>
+      <summary>A teammate wants to put the user's email and phone number in the JWT payload. Is that private?</summary>
+      <p>No. Anyone who holds the token can decode the payload, because base64url is an encoding. Put in only what the API needs, and keep personal data on the server.</p>
+    </details>
+    <details>
+      <summary>On the OAuth page, PrintShop checked the ID token's aud claim. Why should an API check aud before it trusts a JWT?</summary>
+      <p>A token issued for one app could be replayed against another app that trusts the same issuer. Checking that aud names this API rejects tokens meant for someone else. RFC 8725 lists this as a known attack.</p>
+    </details>
+    <h3 class="after-q">What to remember</h3>
+    <ul class="remember">
+      <li>A JWT is a base64url header, payload and signature joined by dots.</li>
+      <li>Anyone can read the claims. The signature only stops changes.</li>
+      <li>An API checks the algorithm, the signature, then exp, iss and aud, before it trusts any claim.</li>
+      <li>An opaque token needs a lookup but can be revoked at once. A JWT needs no lookup but stays valid until exp.</li>
+      <li>Short-lived access tokens plus a refresh token keep a stolen or revoked JWT from lasting long.</li>
+    </ul>
+  </section>
+
+  <section class="part" id="sources">
+    <h2>Sources and further reading</h2>
+    <ol class="sources">
+      <li><a href="https://jwt.io/introduction" target="_blank" rel="noopener">Introduction to JSON Web Tokens</a><span class="pub">jwt.io</span><span class="note">A short tour of the three parts, with a decoder you can paste tokens into.</span></li>
+      <li><a href="https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_Cheat_Sheet.html" target="_blank" rel="noopener">JSON Web Token Cheat Sheet</a><span class="pub">OWASP</span><span class="note">The common attacks on JWTs and how to defend against each, including revocation.</span></li>
+      <li><a href="https://www.oauth.com/oauth2-servers/access-tokens/refreshing-access-tokens" target="_blank" rel="noopener">Refreshing Access Tokens</a><span class="pub">OAuth 2.0 Simplified</span><span class="note">How a client trades a refresh token for a new access token.</span></li>
+      <li><a href="https://www.rfc-editor.org/info/rfc7519/" target="_blank" rel="noopener">RFC 7519: JSON Web Token (JWT)</a><span class="pub">IETF</span><span class="note">The JWT standard and its registered claims.</span></li>
+      <li><a href="https://www.rfc-editor.org/rfc/rfc7515.html" target="_blank" rel="noopener">RFC 7515: JSON Web Signature (JWS)</a><span class="pub">IETF</span><span class="note">How the header, payload and signature are encoded and signed.</span></li>
+      <li><a href="https://rfc-editor.org/rfc/rfc8725.html" target="_blank" rel="noopener">RFC 8725: JSON Web Token Best Current Practices</a><span class="pub">IETF</span><span class="note">The checks every API should make, such as fixing the algorithm and validating aud.</span></li>
+    </ol>
+  </section>
+</main>
+<script>
+
+  function applyThemeFromQuery() {
+    const theme = new URLSearchParams(location.search).get('theme');
+    if (theme === 'dark' || theme === 'light') document.documentElement.dataset.theme = theme;
+  }
+  applyThemeFromQuery();
+
+  // Inside the site's frame: the site page shows the title and references, sizes the frame to fit,
+  // and scrolls itself when a contents link is tapped, so the reader sees one scrollbar.
+  function embedInSite() {
+    if (window.self === window.top) return;
+    document.documentElement.dataset.embedded = 'true';
+    const post = (msg) => window.parent.postMessage(msg, '*');
+    const report = () => post({ type: 'ag:height', height: Math.ceil(document.body.getBoundingClientRect().height) });
+    new ResizeObserver(report).observe(document.body);
+    window.addEventListener('load', report);
+    document.addEventListener('click', (e) => {
+      const a = e.target.closest('a[href^="#"]');
+      const id = a && a.getAttribute('href').slice(1);
+      const target = id && document.getElementById(id);
+      if (!target) return;
+      e.preventDefault();
+      post({ type: 'ag:scroll', top: Math.round(target.getBoundingClientRect().top + window.scrollY) });
+    });
+  }
+  embedInSite();
+
+  // Guess first: reveal the answer after one tap.
+  document.querySelectorAll('[data-guess]').forEach((box) => {
+    const answer = box.querySelector('.answer');
+    const options = box.querySelectorAll('.options button');
+    options.forEach((btn) => btn.addEventListener('click', () => {
+      options.forEach((b) => {
+        b.setAttribute('aria-pressed', String(b === btn));
+        b.classList.toggle('right', b.hasAttribute('data-correct'));
+        b.classList.toggle('wrong', b === btn && !b.hasAttribute('data-correct'));
+      });
+      if (!answer.dataset.text) answer.dataset.text = answer.textContent;
+      answer.textContent = (btn.hasAttribute('data-correct') ? 'You guessed right. ' : 'Not this time. ') + answer.dataset.text;
+      answer.hidden = false;
+    }));
+  });
+
+  // Steppers: Back and Next walk the figure one step at a time.
+  document.querySelectorAll('[data-stepper]').forEach((fig) => {
+    const caps = [...fig.querySelectorAll('ol.captions li')];
+    const total = caps.length;
+    if (!total) return;
+    const bar = document.createElement('div');
+    bar.className = 'step-controls';
+    bar.innerHTML = '<button type="button" data-go="-1">Back</button><span class="count" aria-live="polite"></span><button type="button" class="primary" data-go="1">Next</button>';
+    fig.querySelector('ol.captions').before(bar);
+    const [back, count, next] = bar.children;
+    let step = 1;
+    const show = () => {
+      fig.querySelectorAll('[data-s]').forEach((el) => {
+        const s = Number(el.dataset.s);
+        el.classList.toggle('off', s > step);
+        el.classList.toggle('now', s === step);
+      });
+      fig.querySelectorAll('[data-only]').forEach((el) => {
+        el.classList.toggle('off', !el.dataset.only.split(' ').map(Number).includes(step));
+      });
+      caps.forEach((li, i) => li.classList.toggle('current', i === step - 1));
+      count.textContent = `Step ${step} of ${total}`;
+      back.disabled = step === 1;
+      next.textContent = step === total ? 'Start again' : 'Next';
+    };
+    back.addEventListener('click', () => { step = Math.max(1, step - 1); show(); });
+    next.addEventListener('click', () => { step = step === total ? 1 : step + 1; show(); });
+    fig.classList.add('js');
+    show();
+  });
+
+  // Linked terms: tapping <button class="ref" data-ref="x"> lights every element with data-ref="x".
+  document.querySelectorAll('button.ref[data-ref]').forEach((btn) => btn.addEventListener('click', () => {
+    const on = !btn.classList.contains('lit');
+    document.querySelectorAll('.lit').forEach((el) => el.classList.remove('lit'));
+    if (on) document.querySelectorAll(`[data-ref~="${btn.dataset.ref}"]`).forEach((el) => el.classList.add('lit'));
+  }));
+  // SHA-256 and HMAC-SHA256 in plain JavaScript, so signing works in any frame.
+  const K = new Uint32Array([0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2]);
+  function sha256(bytes) {
+    const len = bytes.length, total = ((len + 9 + 63) >> 6) << 6;
+    const m = new Uint8Array(total); m.set(bytes); m[len] = 0x80;
+    const dv = new DataView(m.buffer); dv.setUint32(total - 4, len * 8); dv.setUint32(total - 8, Math.floor(len / 0x20000000));
+    const h = new Uint32Array([0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19]);
+    const w = new Uint32Array(64), r = (x, n) => (x >>> n) | (x << (32 - n));
+    for (let o = 0; o < total; o += 64) {
+      for (let i = 0; i < 16; i++) w[i] = dv.getUint32(o + i * 4);
+      for (let i = 16; i < 64; i++) {
+        const s0 = r(w[i-15], 7) ^ r(w[i-15], 18) ^ (w[i-15] >>> 3), s1 = r(w[i-2], 17) ^ r(w[i-2], 19) ^ (w[i-2] >>> 10);
+        w[i] = (w[i-16] + s0 + w[i-7] + s1) | 0;
+      }
+      let [a, b, c, d, e, f, g, hh] = h;
+      for (let i = 0; i < 64; i++) {
+        const t1 = (hh + (r(e, 6) ^ r(e, 11) ^ r(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + w[i]) | 0;
+        const t2 = ((r(a, 2) ^ r(a, 13) ^ r(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
+        hh = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+      }
+      h[0] += a; h[1] += b; h[2] += c; h[3] += d; h[4] += e; h[5] += f; h[6] += g; h[7] += hh;
+    }
+    const out = new Uint8Array(32); const ov = new DataView(out.buffer); h.forEach((x, i) => ov.setUint32(i * 4, x)); return out;
+  }
+  const utf8 = (s) => new TextEncoder().encode(s);
+  function hmacSha256(keyStr, msgStr) {
+    let key = utf8(keyStr); if (key.length > 64) key = sha256(key);
+    const k = new Uint8Array(64); k.set(key);
+    const inner = new Uint8Array(64 + utf8(msgStr).length), outer = new Uint8Array(96);
+    for (let i = 0; i < 64; i++) { inner[i] = k[i] ^ 0x36; outer[i] = k[i] ^ 0x5c; }
+    inner.set(utf8(msgStr), 64); outer.set(sha256(inner), 64);
+    return sha256(outer);
+  }
+  const b64url = (bytes) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const b64urlText = (s) => b64url(utf8(s));
+
+  // The forging simulation.
+  const $ = (id) => document.getElementById(id);
+  const SERVER_KEY = 'k3y-only-the-server-knows';
+  const IAT = 1795651200;
+  const EXP = IAT + 3600;
+  const settings = { role: 'user', sig: 'keep', when: 'soon' };
+  const payloadJson = (role) => `{"iss":"auth.shop.example","sub":"user-2481","role":"${role}","iat":${IAT},"exp":${EXP}}`;
+  const headerJson = (alg) => `{"alg":"${alg}","typ":"JWT"}`;
+  const sign = (key, input) => b64url(hmacSha256(key, input));
+  const ORIGINAL_SIG = sign(SERVER_KEY, b64urlText(headerJson('HS256')) + '.' + b64urlText(payloadJson('user')));
+
+  function buildToken(s) {
+    const alg = s.sig === 'none' ? 'none' : 'HS256';
+    const h = b64urlText(headerJson(alg));
+    const p = b64urlText(payloadJson(s.role));
+    const sig = { keep: ORIGINAL_SIG, guess: sign('secret', h + '.' + p), server: sign(SERVER_KEY, h + '.' + p), none: '' }[s.sig];
+    return { h, p, sig, alg };
+  }
+
+  // One pure function runs the API's checks in order and stops at the first failure.
+  function model(s) {
+    const t = buildToken(s);
+    const now = IAT + (s.when === 'soon' ? 600 : 7200);
+    const steps = [{ text: 'Splits the token at its two dots into header, payload and signature.', cls: 'ok' }];
+    const fail401 = 'HTTP/1.1 401 Unauthorized\nWWW-Authenticate: Bearer error="invalid_token"';
+    if (t.alg !== 'HS256') {
+      steps.push({ text: 'Reads alg from the header. It says none, and the API accepts only HS256.', code: fail401, cls: 'bad' });
+      return { steps, cls: 'good', title: '401, because alg none is not allowed',
+        text: 'Removing the signature and setting alg to none is a known attack, and some old libraries accepted it. RFC 8725 says an API must accept only the algorithms it expects, so this API rejects anything but HS256.' };
+    }
+    steps.push({ text: 'Reads alg from the header. It is HS256, which is on the allowlist.', cls: 'ok' });
+    const expected = sign(SERVER_KEY, t.h + '.' + t.p);
+    if (expected !== t.sig) {
+      steps.push({ text: 'Computes HMAC-SHA256 over header.payload with its own key. The result differs from the signature.', code: `expected ${expected}\nreceived ${t.sig}\n${fail401}`, cls: 'bad' });
+      if (s.sig === 'guess') {
+        return { steps, cls: 'good', title: '401, because the key was wrong',
+          text: 'The new signature is correct for the key "secret", but the API checks with its own key. Without the server\'s key, nobody can make a signature the API accepts. A short, guessable key would break this, so real keys are long and random.' };
+      }
+      return { steps, cls: 'good', title: '401, because the signature no longer matches',
+        text: 'You changed one claim, so the payload changed. The API recomputed the HMAC over the new header and payload, and the result differs from the old signature. Any edit to a signed token breaks it.' };
+    }
+    steps.push({ text: 'Computes HMAC-SHA256 over header.payload with its own key. It matches the signature.', cls: 'ok' });
+    if (now >= EXP) {
+      steps.push({ text: `Checks exp. The token expired at ${EXP}, and the time is now ${now}.`, code: fail401, cls: 'bad' });
+      return { steps, cls: 'warn', title: '401, because the token expired',
+        text: 'The signature is fine, but exp was one hour after login and the API checked two hours after. A JWT stays valid only until exp, so a short expiry limits what a stolen token can do. The app would now use its refresh token to get a new one.' };
+    }
+    steps.push({ text: `Checks exp. The token is valid until ${EXP}, and the time is now ${now}.`, cls: 'ok' });
+    if (s.role !== 'admin') {
+      steps.push({ text: 'Trusts the claims. The role claim says user, and this endpoint needs admin.', code: 'HTTP/1.1 403 Forbidden', cls: 'warn' });
+      return { steps, cls: 'warn', title: '403, because the role claim says user',
+        text: s.sig === 'server'
+          ? 'The server re-signed a user token, so every check passed and the API trusted the role claim. The token proves who you are, but it doesn\'t grant admin rights.'
+          : 'Every check passed, so the API trusted the claims. The token proves who you are, but its role claim doesn\'t grant admin rights. Now change the role claim to admin.' };
+    }
+    steps.push({ text: 'Trusts the claims. The role claim says admin.', code: 'HTTP/1.1 200 OK', cls: 'ok' });
+    return { steps, cls: 'warn', title: '200, because the server\'s key signed it',
+      text: 'This is a real admin token. Whoever holds the signing key can make any claims they like, which is why that key never leaves the login server. With RS256, APIs would hold only the public key and couldn\'t make tokens at all.' };
+  }
+
+  const esc = (x) => x.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  function renderToken() {
+    const t = buildToken(settings);
+    $('token').innerHTML = `<span class="h">${t.h}</span><span class="dot">.</span><span class="p">${t.p}</span><span class="dot">.</span><span class="s">${t.sig}</span>`;
+    const pretty = (j) => JSON.stringify(JSON.parse(j), null, 2);
+    $('decoded').innerHTML = esc(`header\n${pretty(headerJson(t.alg))}\n\npayload\n${pretty(payloadJson(settings.role))}`);
+  }
+
+  document.querySelectorAll('.seg').forEach((seg) => seg.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    settings[seg.dataset.key] = b.dataset.v;
+    seg.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    renderToken();
+  }));
+  $('send').addEventListener('click', () => {
+    const out = model(settings);
+    $('log').innerHTML = out.steps.map((st) => `<li class="${st.cls}"><b>API.</b> ${st.text}${st.code ? `<code>${esc(st.code)}</code>` : ''}</li>`).join('');
+    const v = $('verdict');
+    v.className = 'verdict ' + out.cls;
+    v.innerHTML = `<b>${out.title}</b>${out.text}`;
+  });
+  renderToken();
+</script>
+</body>
+</html>

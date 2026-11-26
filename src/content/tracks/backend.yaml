@@ -48,7 +48,10 @@ sections:
       - { id: authn-authz, title: "Authentication and authorization" }
       - { id: password-hashing, title: "Password hashing" }
       - { id: sessions-cookies, title: "Sessions and cookies" }
-      - { id: tokens-jwt, title: "Tokens and JWT" }
+      - id: tokens-jwt
+        title: "Tokens and JWT"
+        artifacts: [tokens-and-jwt]
+        terms: [jwt, claim, jwt-signature, base64url, opaque-token, refresh-token]
       - id: oauth
         title: "OAuth 2.0 and OpenID Connect"
         artifacts: [oauth-and-openid-connect]
