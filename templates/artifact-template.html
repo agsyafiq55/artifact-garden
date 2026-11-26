@@ -30,6 +30,7 @@
   h1 { font-size: 1.9rem; line-height: 1.15; margin: 0 0 8px; }
   h2 { font-size: 1.15rem; margin: 0 0 10px; }
   p.lede { color: var(--muted); margin: 0 0 20px; }
+  :root[data-embedded] main > h1 { display: none; }
   code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .86em; }
   .card { background: var(--surface); border: 1px solid var(--line); border-radius: 0; padding: 16px; }
   button { font: 600 .95rem 'Inter Tight', sans-serif; min-height: 44px; padding: 10px 16px; border-radius: 0; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
@@ -226,6 +227,8 @@
   function applyThemeFromQuery() {
     const theme = new URLSearchParams(location.search).get('theme');
     if (theme === 'dark' || theme === 'light') document.documentElement.dataset.theme = theme;
+    // Inside the site's frame, the site page already shows the title.
+    if (window.self !== window.top) document.documentElement.dataset.embedded = 'true';
   }
   applyThemeFromQuery();
 
