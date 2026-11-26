@@ -49,7 +49,10 @@ sections:
       - { id: password-hashing, title: "Password hashing" }
       - { id: sessions-cookies, title: "Sessions and cookies" }
       - { id: tokens-jwt, title: "Tokens and JWT" }
-      - { id: oauth, title: "OAuth 2.0 and OpenID Connect" }
+      - id: oauth
+        title: "OAuth 2.0 and OpenID Connect"
+        artifacts: [oauth-and-openid-connect]
+        terms: [oauth-2, openid-connect, authorization-server, access-token, scope, id-token, authorization-code-flow, pkce]
       - { id: access-models, title: "Roles and permissions", level: extra }
   - id: caching
     title: "Caching"

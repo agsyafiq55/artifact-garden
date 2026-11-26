@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OAuth 2.0 and OpenID Connect</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff; --surface: #f3f3f1; --ink: #111111; --muted: #505050; --line: #dcdcdc;
+    --accent: #e2231a; --ok: #17783a; --bad: #e2231a; --warn: #a96d00;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f0f0f; --surface: #181818; --ink: #f2f2f2; --muted: #a6a6a6; --line: #2e2e2e;
+      --accent: #ff3b2f; --ok: #4cc27a; --bad: #ff3b2f; --warn: #e0a83a; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f0f0f; --surface: #181818; --ink: #f2f2f2; --muted: #a6a6a6; --line: #2e2e2e;
+    --accent: #ff3b2f; --ok: #4cc27a; --bad: #ff3b2f; --warn: #e0a83a; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 'Inter Tight', system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1, h2 { font-family: 'Inter Tight', Helvetica, Arial, sans-serif; font-weight: 700; letter-spacing: -0.03em; }
+  h1 { font-size: 1.9rem; line-height: 1.15; margin: 0 0 8px; }
+  h2 { font-size: 1.15rem; margin: 0 0 10px; }
+  p.lede { color: var(--muted); margin: 0 0 20px; }
+  :root[data-embedded] main > h1, :root[data-embedded] #sources, :root[data-embedded] .toc li:has(a[href="#sources"]) { display: none; }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .86em; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 0; padding: 16px; }
+  button { font: 600 .95rem 'Inter Tight', sans-serif; min-height: 44px; padding: 10px 16px; border-radius: 0; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--surface); border-color: transparent; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button:not(:disabled):hover { border-color: var(--ink); }
+  button:not(:disabled):active { transform: scale(.98); }
+  h2 { font-size: 1.35rem; margin: 0 0 12px; letter-spacing: -0.025em; }
+  h3 { font-size: 1rem; margin: 0 0 6px; letter-spacing: -0.01em; }
+  p { margin: 0 0 12px; }
+  section.part { padding-top: 22px; margin-top: 34px; border-top: 2px solid var(--ink); }
+  .num { color: var(--accent); margin-right: 8px; }
+  .toc { display: flex; flex-wrap: wrap; gap: 0 18px; margin: 0 0 8px; padding: 0; list-style: none; }
+  .toc a { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); font-weight: 600; text-decoration: none; border-bottom: 2px solid transparent; }
+  .toc a:hover { border-bottom-color: var(--accent); }
+  .pair { display: grid; gap: 12px; margin: 16px 0; }
+  @media (min-width: 560px) { .pair { grid-template-columns: 1fr 1fr; } }
+  .role { border-top: 4px solid var(--ink); }
+  .role.client { border-top-color: var(--accent); }
+  .role ul { margin: 0; padding-left: 18px; }
+  .role li { margin-bottom: 4px; }
+  .analogy { border-left: 4px solid var(--accent); padding: 12px 14px; background: var(--surface); margin: 16px 0; }
+  .diagram { width: 100%; height: auto; display: block; margin: 8px 0 16px; }
+  .diagram text { font: 600 13px 'Inter Tight', sans-serif; fill: var(--ink); }
+  .diagram .soft { fill: var(--muted); font-weight: 500; }
+  .diagram .box { fill: var(--surface); stroke: var(--ink); stroke-width: 2; }
+  .diagram .req { stroke: var(--accent); stroke-width: 2.5; }
+  .diagram .res { stroke: var(--ink); stroke-width: 2.5; }
+  ol.steps { padding-left: 22px; margin: 0 0 16px; }
+  ol.steps li { margin-bottom: 10px; }
+  pre { margin: 6px 0 14px; padding: 12px 14px; background: var(--surface); border-left: 4px solid var(--line); overflow-x: auto; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre; }
+  pre.request { border-left-color: var(--accent); }
+  pre.response { border-left-color: var(--ink); }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0 14px; font-size: .92rem; }
+  th, td { text-align: left; padding: 8px 6px; border-top: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 700; white-space: nowrap; }
+  ol.todo { padding-left: 22px; margin: 0 0 16px; color: var(--muted); }
+  .verdict { margin: 16px 0; padding: 14px 16px; border-left: 4px solid var(--line); background: var(--surface); }
+  .verdict.good { border-color: var(--ok); }
+  .verdict.warn { border-color: var(--warn); }
+  .verdict.bad { border-color: var(--bad); }
+  .verdict b { display: block; font-size: 1.05rem; margin-bottom: 4px; }
+  ul.remember { padding-left: 20px; margin: 0 0 16px; }
+  ul.remember li { margin-bottom: 8px; }
+  details { border-top: 1px solid var(--line); }
+  details:last-of-type { border-bottom: 1px solid var(--line); }
+  summary { cursor: pointer; padding: 12px 0; min-height: 44px; font-weight: 600; list-style-position: outside; }
+  details p { color: var(--muted); }
+  .guess { margin: 0 0 20px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); }
+  .guess p { margin: 0 0 10px; }
+  .guess .options { display: grid; gap: 8px; }
+  .guess .options button { text-align: left; }
+  .guess button[aria-pressed="true"] { border-color: var(--ink); }
+  .guess button.right { border-left: 4px solid var(--ok); }
+  .guess button.wrong { border-left: 4px solid var(--bad); }
+  .guess .answer { margin: 12px 0 0; }
+  .mixup { margin: 16px 0; padding: 12px 14px; border: 1px solid var(--line); border-left: 4px solid var(--warn); }
+  .mixup p { margin: 0 0 6px; }
+  .mixup p:last-child { margin: 0; }
+  figure { margin: 8px 0 20px; }
+  figcaption { color: var(--muted); font-size: .92rem; margin-top: 6px; }
+  .diagram .edge { fill: none; stroke: var(--ink); stroke-width: 2; }
+  .diagram .edge.async { stroke-dasharray: 6 5; }
+  .diagram .tip { fill: var(--ink); }
+  .diagram .now .box, .diagram .box.now, .diagram .lit .box, .diagram .box.lit { stroke: var(--accent); stroke-width: 3; }
+  .diagram .now .edge, .diagram .edge.now, .diagram .lit .edge, .diagram .edge.lit { stroke: var(--accent); stroke-width: 3; }
+  .stepper.js [data-s], .stepper.js [data-only] { transition: opacity .25s ease; }
+  .stepper.js .off { opacity: 0; pointer-events: none; }
+  .stepper.js ol.captions { list-style: none; padding-left: 0; }
+  .stepper.js ol.captions li { display: none; }
+  .stepper.js ol.captions li.current { display: list-item; }
+  ol.captions { padding-left: 22px; margin: 4px 0 8px; min-height: 3em; }
+  .step-controls { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+  .step-controls .count { flex: 1; text-align: center; color: var(--muted); font-size: .92rem; }
+  button.ref { all: unset; font-weight: 700; border-bottom: 2px dotted var(--accent); cursor: pointer; }
+  button.ref:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button.ref.lit { background: var(--surface); }
+  h3.after-q { margin-top: 24px; }
+  ol.sources { padding-left: 22px; margin: 0; }
+  ol.sources li { margin-bottom: 12px; }
+  ol.sources a { color: var(--ink); font-weight: 600; text-decoration-color: var(--accent); text-underline-offset: 3px; overflow-wrap: anywhere; }
+  ol.sources .pub, ol.sources .note { display: block; color: var(--muted); font-size: .92rem; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+  .diagram .life { stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 4 4; }
+  .diagram .actor { font-weight: 700; }
+  .diagram .lbl { font-size: 12px; fill: var(--ink); font-weight: 600; paint-order: stroke; stroke: var(--bg); stroke-width: 5px; stroke-linejoin: round; }
+  .ctl { margin: 0 0 14px; }
+  .ctl-label { font-weight: 700; margin: 0 0 6px; }
+  .seg { display: flex; flex-wrap: wrap; gap: 8px; }
+  .seg button[aria-pressed="true"] { border-color: var(--ink); background: var(--bg); box-shadow: inset 0 -3px 0 var(--accent); }
+  button.send { width: 100%; margin: 4px 0 14px; }
+  ul.parts { padding-left: 20px; margin: 0 0 12px; }
+  ul.parts li { margin-bottom: 8px; }
+  ol.notes { padding-left: 22px; margin: 0 0 16px; }
+  ol.notes li { margin-bottom: 8px; }
+  ol.flowlog { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  ol.flowlog li { padding: 8px 10px; background: var(--bg); border-left: 3px solid var(--line); font-size: .92rem; }
+  ol.flowlog li.ok { border-color: var(--ok); }
+  ol.flowlog li.warn { border-color: var(--warn); }
+  ol.flowlog li.bad { border-color: var(--bad); }
+  ol.flowlog code { display: block; margin-top: 4px; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+  ol.flowlog .empty { border: 0; background: none; color: var(--muted); padding-left: 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>OAuth 2.0 and OpenID Connect</h1>
+  <p class="lede">Every "Log in with Google" button and every app that asks to see your calendar runs on these two standards. OAuth 2.0 lets you give an app limited access to your data without handing over your password. OpenID Connect adds a way for the app to learn who you are. This page walks through one login, message by message, then lets you attack it.</p>
+
+  <div class="guess" data-guess>
+    <p><b>Guess first.</b> You tap "Log in with PhotoCloud" on a printing site, and the site receives an access token. Does that access token prove to the site who you are?</p>
+    <div class="options">
+      <button type="button" data-correct>No, it only lets the site call the photo API</button>
+      <button type="button">Yes, it is the site's proof that you logged in</button>
+    </div>
+    <p class="answer" hidden>An access token says what the site may do, and it is meant for the API. Proof of who logged in comes from an ID token, which OpenID Connect adds. Part 1 explains the difference.</p>
+  </div>
+
+  <ul class="toc">
+    <li><a href="#idea">Overview of OAuth 2.0 and OpenID Connect</a></li>
+    <li><a href="#how">How the authorization code flow works</a></li>
+    <li><a href="#try">Run a login and attack it</a></li>
+    <li><a href="#check">Practice questions</a></li>
+    <li><a href="#sources">Sources and further reading</a></li>
+  </ul>
+
+  <section class="part" id="idea">
+    <h2><span class="num">1</span>Overview of OAuth 2.0 and OpenID Connect</h2>
+    <p>You keep your photos on PhotoCloud. A printing site, PrintShop, wants to print some of them. PrintShop could ask for your PhotoCloud password, but then it could do anything you can do, forever, and you could only stop it by changing your password.</p>
+    <p><b>OAuth 2.0</b> is the standard that fixes this. You let an app act for you with limited rights, and the app never sees your password. The standard names four roles:</p>
+    <ul class="parts">
+      <li>The <b>resource owner</b> is you, the person who owns the photos.</li>
+      <li>The <b>client</b> is the app that wants access, here PrintShop.</li>
+      <li>The <b>authorization server</b> is the service that logs you in, asks for your approval and issues tokens. Here it is PhotoCloud's login page.</li>
+      <li>The <b>resource server</b> is the API that holds the data, here PhotoCloud's photo API.</li>
+    </ul>
+    <p>When you approve, the authorization server gives PrintShop an <b>access token</b>. This is a string that PrintShop sends to the photo API with each request, in the <code>Authorization</code> header. The token carries a <b>scope</b>, the list of named permissions you approved, such as <code>photos.read</code>, and it expires.</p>
+    <p><b>OpenID Connect</b> is a layer on top of OAuth 2.0 that adds identity. When the client asks for the <code>openid</code> scope, the authorization server also returns an <b>ID token</b>. The ID token is a signed JSON Web Token, or JWT, that tells the client who logged in, who issued the token, which app it is for and when it expires.</p>
+    <div class="analogy">Think of a hotel. The front desk is the authorization server. It checks your passport once and hands over a key card, the access token, that opens your room and the gym until checkout. The doors read the card, not your name. The registration slip that says who checked in is the ID token. The analogy stops at the guest. In OAuth, the one holding the key card is an app acting for you.</div>
+    <div class="mixup">
+      <p><b>Common mix-up</b></p>
+      <p>"OAuth 2.0 logs users in."</p>
+      <p>OAuth 2.0 only grants access. An access token tells the client nothing reliable about who you are, and it may even be meant for a different app. "Log in with" buttons use OpenID Connect, which adds the ID token for that job.</p>
+    </div>
+  </section>
+
+  <section class="part" id="how">
+    <h2><span class="num">2</span>How the authorization code flow works</h2>
+    <p>Most apps get their tokens through the <b>authorization code flow</b>. The authorization server first sends back a short-lived, one-time code through your browser. The app then trades that code for tokens in a direct call from its own server. RFC 6749 recommends that a code expire within 10 minutes, and a client may use it only once.</p>
+    <p><b>PKCE</b>, short for Proof Key for Code Exchange, ties the code to the app that asked for it. The app makes a random secret, the code verifier, and sends only its SHA-256 hash, the code challenge, at the start. To redeem the code, the app must show the verifier itself. Tap Next to follow one login.</p>
+    <figure class="stepper" data-stepper>
+      <svg class="diagram" viewBox="0 0 340 284" role="img" aria-label="Sequence of the authorization code flow with PKCE between you, PrintShop, the authorization server and the photo API, in seven messages">
+        <defs>
+          <marker id="tip-flow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="tip" d="M0 0 10 5 0 10z"/></marker>
+        </defs>
+        <text class="actor" x="36" y="16" text-anchor="middle">You</text>
+        <text class="actor" x="126" y="16" text-anchor="middle">PrintShop</text>
+        <text class="actor" x="222" y="16" text-anchor="middle">Auth server</text>
+        <text class="actor" x="306" y="16" text-anchor="middle">Photo API</text>
+        <path class="life" d="M36 26V280M126 26V280M222 26V280M306 26V280"/>
+        <g data-s="1"><path class="edge" d="M126 58H218" marker-end="url(#tip-flow)"/><text class="lbl" x="174" y="49" text-anchor="middle">challenge</text></g>
+        <g data-s="2"><path class="edge" d="M36 92H218" marker-end="url(#tip-flow)"/><text class="lbl" x="129" y="83" text-anchor="middle">log in, approve</text></g>
+        <g data-s="3"><path class="edge" d="M222 126H130" marker-end="url(#tip-flow)"/><text class="lbl" x="174" y="117" text-anchor="middle">code, state</text></g>
+        <g data-s="4"><path class="edge" d="M126 160H218" marker-end="url(#tip-flow)"/><text class="lbl" x="174" y="151" text-anchor="middle">code, verifier</text></g>
+        <g data-s="5"><path class="edge" d="M222 194H130" marker-end="url(#tip-flow)"/><text class="lbl" x="174" y="185" text-anchor="middle">tokens</text></g>
+        <g data-s="6"><path class="edge" d="M126 228H302" marker-end="url(#tip-flow)"/><text class="lbl" x="216" y="219" text-anchor="middle">Bearer token</text></g>
+        <g data-s="7"><path class="edge" d="M306 262H130" marker-end="url(#tip-flow)"/><text class="lbl" x="216" y="253" text-anchor="middle">photos</text></g>
+      </svg>
+      <ol class="captions">
+        <li>PrintShop makes a code verifier and keeps it. It sends you to the authorization server with the code challenge and a random state value.</li>
+        <li>You log in at the authorization server, never at PrintShop. It shows the scopes PrintShop asked for, and you approve them.</li>
+        <li>The authorization server sends you back to PrintShop's redirect URI with an authorization code and the same state value. PrintShop checks that the state matches.</li>
+        <li>PrintShop's server sends the code and the code verifier straight to the token endpoint. Your browser is not part of this call.</li>
+        <li>The authorization server hashes the verifier and checks it against the challenge from step 1. It returns an access token and, because the scope included openid, an ID token.</li>
+        <li>PrintShop calls the photo API with the access token in the Authorization header.</li>
+        <li>The photo API checks the token and its scope, then returns the photos.</li>
+      </ol>
+      <figcaption>The code travels through your browser, but the tokens only travel between servers that can prove who they are.</figcaption>
+    </figure>
+
+    <h3>The real messages, step by step</h3>
+    <p>Step 1. PrintShop sends your browser to this address.</p>
+    <pre class="request"><code>GET /authorize?response_type=code
+  &amp;client_id=printshop
+  &amp;redirect_uri=https%3A%2F%2Fprintshop.example%2Fcallback
+  &amp;scope=openid%20photos.read
+  &amp;state=af0ifjsldkj
+  &amp;code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM
+  &amp;code_challenge_method=S256 HTTP/1.1
+Host: auth.photocloud.example</code></pre>
+    <p>Step 3. After you approve, the authorization server redirects you back.</p>
+    <pre class="response"><code>HTTP/1.1 302 Found
+Location: https://printshop.example/callback?code=SplxlOBeZQQYbYS6WxSbIA&amp;state=af0ifjsldkj</code></pre>
+    <p>Steps 4 and 5. PrintShop's server redeems the code.</p>
+    <pre class="request"><code>POST /token HTTP/1.1
+Host: auth.photocloud.example
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code
+&amp;code=SplxlOBeZQQYbYS6WxSbIA
+&amp;redirect_uri=https%3A%2F%2Fprintshop.example%2Fcallback
+&amp;client_id=printshop
+&amp;code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk</code></pre>
+    <pre class="response"><code>HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: no-store
+
+{
+  "access_token": "SlAV32hkKG",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "scope": "openid photos.read",
+  "id_token": "eyJhbGciOiJSUzI1NiIs..."
+}</code></pre>
+    <p>The ID token's middle part decodes to these claims.</p>
+    <pre><code>{
+  "iss": "https://auth.photocloud.example",
+  "sub": "user-2481",
+  "aud": "printshop",
+  "iat": 1795651200,
+  "exp": 1795654800
+}</code></pre>
+    <p>Step 6. PrintShop calls the photo API.</p>
+    <pre class="request"><code>GET /v1/photos HTTP/1.1
+Host: api.photocloud.example
+Authorization: Bearer SlAV32hkKG</code></pre>
+    <ol class="notes">
+      <li>The code challenge in step 1 is the SHA-256 hash of the code verifier in step 4. Only PrintShop knows the verifier until step 4.</li>
+      <li>The state value goes out in step 1 and comes back in step 3. PrintShop rejects a callback whose state it never sent.</li>
+      <li>The ID token's <code>iss</code> names the issuer, <code>sub</code> names the user, <code>aud</code> names the app it is for, and <code>exp</code> is when it expires.</li>
+      <li>The access token lasts 3600 seconds, one hour, and covers only <code>openid photos.read</code>.</li>
+    </ol>
+
+    <h3>Which token goes where</h3>
+    <table>
+      <tr><th>Token</th><th>Who reads it</th><th>What it says</th></tr>
+      <tr><td>Authorization code</td><td>The authorization server, once</td><td>A one-time ticket to fetch tokens</td></tr>
+      <tr><td>Access token</td><td>The resource server</td><td>What the client may do, and until when</td></tr>
+      <tr><td>ID token</td><td>The client</td><td>Who logged in, who issued the token and which app it is for</td></tr>
+    </table>
+    <p>RFC 9700, the current OAuth security advice, says public clients such as mobile and browser apps must use PKCE, and other clients should. It also says clients should not use the older implicit flow, which returned the access token straight in the browser's address.</p>
+  </section>
+
+  <section class="part" id="try">
+    <h2><span class="num">3</span>Run a login and attack it</h2>
+    <p>PrintShop is a mobile app here, so it has no secret of its own. Choose the settings, run the login, and read each message the parties send.</p>
+    <ol class="todo">
+      <li>Predict, then check. An attacker has stolen the authorization code and PKCE is on. Predict whether the attacker gets a token, then tap Run the login.</li>
+      <li>Turn PKCE off and run the same attack.</li>
+      <li>Let PrintShop redeem the code and run a normal login. Read what the ID token says.</li>
+      <li>Keep PrintShop, choose Delete a photo and run it again.</li>
+    </ol>
+    <section class="card">
+      <div class="ctl">
+        <p class="ctl-label">PKCE</p>
+        <div class="seg" data-key="pkce">
+          <button type="button" data-v="on" aria-pressed="true">On</button>
+          <button type="button" data-v="off" aria-pressed="false">Off</button>
+        </div>
+      </div>
+      <div class="ctl">
+        <p class="ctl-label">Who sends the code to the token endpoint</p>
+        <div class="seg" data-key="who">
+          <button type="button" data-v="app" aria-pressed="false">PrintShop</button>
+          <button type="button" data-v="attacker" aria-pressed="true">An attacker</button>
+        </div>
+      </div>
+      <div class="ctl">
+        <p class="ctl-label">What to do with the access token</p>
+        <div class="seg" data-key="action">
+          <button type="button" data-v="read" aria-pressed="true">Read photos</button>
+          <button type="button" data-v="delete" aria-pressed="false">Delete a photo</button>
+        </div>
+      </div>
+      <button type="button" class="primary send" id="run">Run the login</button>
+      <h3>Messages</h3>
+      <ol class="flowlog" id="log"><li class="empty">Each message appears here when you run the login.</li></ol>
+    </section>
+    <div class="verdict" id="verdict" aria-live="polite"><b>Nothing run yet</b>Predict whether the attacker gets a token, then tap Run the login.</div>
+  </section>
+
+  <section class="part" id="check">
+    <h2><span class="num">4</span>Practice questions</h2>
+    <details>
+      <summary>Which token does the photo API check, and which one does PrintShop read to learn who you are?</summary>
+      <p>The photo API checks the access token. PrintShop reads the ID token, whose sub claim names you and whose aud claim names PrintShop.</p>
+    </details>
+    <details>
+      <summary>Why does the authorization server send back a code instead of the tokens themselves?</summary>
+      <p>The code passes through your browser, where history, logs and other apps may see it. A code is short-lived, works once and, with PKCE, works only with the verifier. The tokens then travel in a direct call between servers.</p>
+    </details>
+    <details>
+      <summary>A mobile app can't keep a client secret, because anyone can unpack the app and read it. What protects its authorization codes?</summary>
+      <p>PKCE. The app makes a fresh code verifier for every login, so a stolen code is useless without it. RFC 9700 says public clients like this must use PKCE.</p>
+    </details>
+    <details>
+      <summary>Your backend accepts any valid PhotoCloud access token as proof that the user logged in to your app. What's wrong?</summary>
+      <p>An access token is meant for the API, and it may have been issued to a different app. Another app could replay a user's token to log in as them. Your app should check an ID token whose aud claim names your own client ID.</p>
+    </details>
+    <details>
+      <summary>On the HTTP requests and responses page, every request stood alone. Which header carries the access token, and why must every API call include it?</summary>
+      <p>The Authorization header, as <code>Authorization: Bearer SlAV32hkKG</code>. HTTP is stateless, so the photo API remembers nothing from the last call and needs the token on every request.</p>
+    </details>
+    <h3 class="after-q">What to remember</h3>
+    <ul class="remember">
+      <li>OAuth 2.0 grants limited access without sharing a password. OpenID Connect adds identity on top.</li>
+      <li>The access token goes to the API. The ID token stays with the client and says who logged in.</li>
+      <li>Scope limits what an access token can do, even when the token is valid.</li>
+      <li>The authorization code flow sends a one-time code through the browser and the tokens server to server.</li>
+      <li>PKCE ties the code to the app that started the login, so a stolen code can't be redeemed.</li>
+    </ul>
+  </section>
+
+  <section class="part" id="sources">
+    <h2>Sources and further reading</h2>
+    <ol class="sources">
+      <li><a href="https://www.oauth.com/oauth2-servers/server-side-apps/authorization-code/" target="_blank" rel="noopener">Authorization Code Grant</a><span class="pub">OAuth 2.0 Simplified</span><span class="note">A plain walkthrough of each request in the authorization code flow.</span></li>
+      <li><a href="https://www.oauth.com/oauth2-servers/openid-connect/authorization-vs-authentication/" target="_blank" rel="noopener">Authorization vs Authentication</a><span class="pub">OAuth 2.0 Simplified</span><span class="note">Why OAuth alone is not a login, and what OpenID Connect adds.</span></li>
+      <li><a href="https://www.rfc-editor.org/rfc/rfc6749.html" target="_blank" rel="noopener">RFC 6749: The OAuth 2.0 Authorization Framework</a><span class="pub">IETF</span><span class="note">The original standard, with the four roles and the authorization code grant.</span></li>
+      <li><a href="https://www.rfc-editor.org/rfc/rfc7636.html" target="_blank" rel="noopener">RFC 7636: Proof Key for Code Exchange by OAuth Public Clients</a><span class="pub">IETF</span><span class="note">The PKCE standard, including the code interception attack it stops.</span></li>
+      <li><a href="https://openid.net/specs/openid-connect-core-1_0.html" target="_blank" rel="noopener">OpenID Connect Core 1.0</a><span class="pub">OpenID Foundation</span><span class="note">The ID token and its claims, defined on top of OAuth 2.0.</span></li>
+      <li><a href="https://rfc-editor.org/rfc/rfc9700.html" target="_blank" rel="noopener">RFC 9700: Best Current Practice for OAuth 2.0 Security</a><span class="pub">IETF</span><span class="note">The current security advice, including PKCE for every client and no implicit flow.</span></li>
+    </ol>
+  </section>
+</main>
+<script>
+
+  function applyThemeFromQuery() {
+    const theme = new URLSearchParams(location.search).get('theme');
+    if (theme === 'dark' || theme === 'light') document.documentElement.dataset.theme = theme;
+  }
+  applyThemeFromQuery();
+
+  // Inside the site's frame: the site page shows the title and references, sizes the frame to fit,
+  // and scrolls itself when a contents link is tapped, so the reader sees one scrollbar.
+  function embedInSite() {
+    if (window.self === window.top) return;
+    document.documentElement.dataset.embedded = 'true';
+    const post = (msg) => window.parent.postMessage(msg, '*');
+    const report = () => post({ type: 'ag:height', height: Math.ceil(document.body.getBoundingClientRect().height) });
+    new ResizeObserver(report).observe(document.body);
+    window.addEventListener('load', report);
+    document.addEventListener('click', (e) => {
+      const a = e.target.closest('a[href^="#"]');
+      const id = a && a.getAttribute('href').slice(1);
+      const target = id && document.getElementById(id);
+      if (!target) return;
+      e.preventDefault();
+      post({ type: 'ag:scroll', top: Math.round(target.getBoundingClientRect().top + window.scrollY) });
+    });
+  }
+  embedInSite();
+
+  // Guess first: reveal the answer after one tap.
+  document.querySelectorAll('[data-guess]').forEach((box) => {
+    const answer = box.querySelector('.answer');
+    const options = box.querySelectorAll('.options button');
+    options.forEach((btn) => btn.addEventListener('click', () => {
+      options.forEach((b) => {
+        b.setAttribute('aria-pressed', String(b === btn));
+        b.classList.toggle('right', b.hasAttribute('data-correct'));
+        b.classList.toggle('wrong', b === btn && !b.hasAttribute('data-correct'));
+      });
+      if (!answer.dataset.text) answer.dataset.text = answer.textContent;
+      answer.textContent = (btn.hasAttribute('data-correct') ? 'You guessed right. ' : 'Not this time. ') + answer.dataset.text;
+      answer.hidden = false;
+    }));
+  });
+
+  // Steppers: Back and Next walk the figure one step at a time.
+  document.querySelectorAll('[data-stepper]').forEach((fig) => {
+    const caps = [...fig.querySelectorAll('ol.captions li')];
+    const total = caps.length;
+    if (!total) return;
+    const bar = document.createElement('div');
+    bar.className = 'step-controls';
+    bar.innerHTML = '<button type="button" data-go="-1">Back</button><span class="count" aria-live="polite"></span><button type="button" class="primary" data-go="1">Next</button>';
+    fig.querySelector('ol.captions').before(bar);
+    const [back, count, next] = bar.children;
+    let step = 1;
+    const show = () => {
+      fig.querySelectorAll('[data-s]').forEach((el) => {
+        const s = Number(el.dataset.s);
+        el.classList.toggle('off', s > step);
+        el.classList.toggle('now', s === step);
+      });
+      fig.querySelectorAll('[data-only]').forEach((el) => {
+        el.classList.toggle('off', !el.dataset.only.split(' ').map(Number).includes(step));
+      });
+      caps.forEach((li, i) => li.classList.toggle('current', i === step - 1));
+      count.textContent = `Step ${step} of ${total}`;
+      back.disabled = step === 1;
+      next.textContent = step === total ? 'Start again' : 'Next';
+    };
+    back.addEventListener('click', () => { step = Math.max(1, step - 1); show(); });
+    next.addEventListener('click', () => { step = step === total ? 1 : step + 1; show(); });
+    fig.classList.add('js');
+    show();
+  });
+
+  // Linked terms: tapping <button class="ref" data-ref="x"> lights every element with data-ref="x".
+  document.querySelectorAll('button.ref[data-ref]').forEach((btn) => btn.addEventListener('click', () => {
+    const on = !btn.classList.contains('lit');
+    document.querySelectorAll('.lit').forEach((el) => el.classList.remove('lit'));
+    if (on) document.querySelectorAll(`[data-ref~="${btn.dataset.ref}"]`).forEach((el) => el.classList.add('lit'));
+  }));
+
+  // The login simulation.
+  const $ = (id) => document.getElementById(id);
+  const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
+  const CHALLENGE = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM';
+  const CODE = 'SplxlOBeZQQYbYS6WxSbIA';
+  const STATE = 'af0ifjsldkj';
+  const TOKEN = 'SlAV32hkKG';
+  const settings = { pkce: 'on', who: 'attacker', action: 'read' };
+
+  function apiCall(actor, action) {
+    if (action === 'read') {
+      return [
+        { who: actor, text: 'Calls the photo API with the access token.', code: `GET /v1/photos\nAuthorization: Bearer ${TOKEN}` },
+        { who: 'Photo API', text: 'The token is valid and carries photos.read, so it returns the photos.', code: 'HTTP/1.1 200 OK', cls: actor === 'Attacker' ? 'bad' : 'ok' },
+      ];
+    }
+    return [
+      { who: actor, text: 'Tries to delete a photo with the same access token.', code: `DELETE /v1/photos/42\nAuthorization: Bearer ${TOKEN}` },
+      { who: 'Photo API', text: 'The token only carries photos.read, so the API refuses.', code: 'HTTP/1.1 403 Forbidden\nWWW-Authenticate: Bearer error="insufficient_scope"', cls: 'warn' },
+    ];
+  }
+
+  // One pure function turns the settings into the messages and the verdict.
+  function model(s) {
+    const pkce = s.pkce === 'on';
+    const steps = [
+      { who: 'PrintShop', text: pkce ? 'Makes a code verifier, keeps it, and sends you to the authorization server with its hash.' : 'Sends you to the authorization server with no code challenge.',
+        code: `GET /authorize?response_type=code&client_id=printshop&scope=openid%20photos.read&state=${STATE}` + (pkce ? `&code_challenge=${CHALLENGE}&code_challenge_method=S256` : '') },
+      { who: 'You', text: 'Log in at the authorization server and approve openid and photos.read.' },
+      { who: 'Auth server', text: 'Sends you back to PrintShop with a one-time authorization code.', code: `HTTP/1.1 302 Found\nLocation: https://printshop.example/callback?code=${CODE}&state=${STATE}` },
+    ];
+    if (s.who === 'attacker') {
+      steps.push({ who: 'Attacker', text: 'A malicious app on the same phone catches the redirect and copies the code.', cls: 'bad' });
+      steps.push({ who: 'Attacker', text: pkce ? 'Sends the stolen code to the token endpoint. It has no code verifier, because PrintShop never sent it anywhere.' : 'Sends the stolen code to the token endpoint. Nothing else is needed.',
+        code: `POST /token\ngrant_type=authorization_code&code=${CODE}&client_id=printshop` });
+      if (pkce) {
+        steps.push({ who: 'Auth server', text: 'This code was issued with a code challenge, but the request has no verifier to match it. It refuses.', code: 'HTTP/1.1 400 Bad Request\n{"error": "invalid_grant"}', cls: 'ok' });
+        return { steps, cls: 'good', title: 'PKCE stopped the stolen code',
+          text: 'The attacker held a valid authorization code, but only PrintShop knew the code verifier behind the challenge. Without it, the token endpoint returned invalid_grant, and no token left the server.' };
+      }
+      steps.push({ who: 'Auth server', text: 'Accepts the code and returns tokens to the attacker.', code: `HTTP/1.1 200 OK\n{"access_token": "${TOKEN}", "token_type": "Bearer", "expires_in": 3600}`, cls: 'bad' });
+      steps.push(...apiCall('Attacker', s.action));
+      if (s.action === 'delete') {
+        return { steps, cls: 'bad', title: 'The attacker got a token, but not delete rights',
+          text: 'Without PKCE, the attacker redeemed the stolen code. The scope still limited the token to photos.read, so the delete failed. A read would have worked. Turn PKCE back on and run it again.' };
+      }
+      return { steps, cls: 'bad', title: 'The attacker got your photos',
+        text: 'Without PKCE, the code was the only proof the token endpoint asked for. PrintShop has no secret, so anyone holding the code could redeem it. Turn PKCE back on and run it again.' };
+    }
+    steps.push({ who: 'PrintShop', text: pkce ? 'Sends the code and the code verifier to the token endpoint.' : 'Sends the code to the token endpoint.',
+      code: `POST /token\ngrant_type=authorization_code&code=${CODE}&client_id=printshop` + (pkce ? `&code_verifier=${VERIFIER}` : '') });
+    steps.push({ who: 'Auth server', text: pkce ? 'Hashes the verifier, finds that it matches the challenge, and returns an access token and an ID token.' : 'Returns an access token and an ID token.',
+      code: `HTTP/1.1 200 OK\n{"access_token": "${TOKEN}", "token_type": "Bearer", "expires_in": 3600, "id_token": "eyJhbGciOiJSUzI1NiIs..."}`, cls: 'ok' });
+    steps.push({ who: 'PrintShop', text: 'Reads the ID token. Its sub claim is user-2481 and its aud claim is printshop, so PrintShop knows who logged in and that the token was issued to it.' });
+    steps.push(...apiCall('PrintShop', s.action));
+    if (s.action === 'delete') {
+      return { steps, cls: 'warn', title: '403, because the scope was photos.read',
+        text: 'You approved reading, not deleting. The photo API checks the scope of every access token, so a valid token still can\'t do more than you approved.' };
+    }
+    if (!pkce) {
+      return { steps, cls: 'warn', title: 'Logged in, but the code was unprotected',
+        text: 'The login worked, but nothing tied the code to PrintShop. Anyone who copied it could have redeemed it. Choose An attacker to see what that costs.' };
+    }
+    return { steps, cls: 'good', title: 'Logged in, and the photos arrived',
+      text: 'PrintShop proved it started this login by sending the code verifier. The ID token told PrintShop who you are, and the access token let it read your photos. PrintShop never saw your password.' };
+  }
+
+  const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+  function render(out) {
+    $('log').innerHTML = out.steps.map((st) =>
+      `<li class="${st.cls || ''}"><b>${st.who}.</b> ${st.text}${st.code ? `<code>${esc(st.code)}</code>` : ''}</li>`).join('');
+    const v = $('verdict');
+    v.className = 'verdict ' + out.cls;
+    v.innerHTML = `<b>${out.title}</b>${out.text}`;
+  }
+
+  document.querySelectorAll('.seg').forEach((seg) => seg.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    settings[seg.dataset.key] = b.dataset.v;
+    seg.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  }));
+  $('run').addEventListener('click', () => render(model(settings)));
+</script>
+</body>
+</html>
