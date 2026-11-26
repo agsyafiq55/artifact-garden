@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>REST</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff; --surface: #f3f3f1; --ink: #111111; --muted: #505050; --line: #dcdcdc;
+    --accent: #e2231a; --ok: #17783a; --bad: #e2231a; --warn: #a96d00;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f0f0f; --surface: #181818; --ink: #f2f2f2; --muted: #a6a6a6; --line: #2e2e2e;
+      --accent: #ff3b2f; --ok: #4cc27a; --bad: #ff3b2f; --warn: #e0a83a; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f0f0f; --surface: #181818; --ink: #f2f2f2; --muted: #a6a6a6; --line: #2e2e2e;
+    --accent: #ff3b2f; --ok: #4cc27a; --bad: #ff3b2f; --warn: #e0a83a; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 'Inter Tight', system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1, h2 { font-family: 'Inter Tight', Helvetica, Arial, sans-serif; font-weight: 700; letter-spacing: -0.03em; }
+  h1 { font-size: 1.9rem; line-height: 1.15; margin: 0 0 8px; }
+  h2 { font-size: 1.15rem; margin: 0 0 10px; }
+  p.lede { color: var(--muted); margin: 0 0 20px; }
+  :root[data-embedded] main > h1, :root[data-embedded] #sources, :root[data-embedded] .toc li:has(a[href="#sources"]) { display: none; }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .86em; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 0; padding: 16px; }
+  button { font: 600 .95rem 'Inter Tight', sans-serif; min-height: 44px; padding: 10px 16px; border-radius: 0; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--surface); border-color: transparent; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button:not(:disabled):hover { border-color: var(--ink); }
+  button:not(:disabled):active { transform: scale(.98); }
+  h2 { font-size: 1.35rem; margin: 0 0 12px; letter-spacing: -0.025em; }
+  h3 { font-size: 1rem; margin: 0 0 6px; letter-spacing: -0.01em; }
+  p { margin: 0 0 12px; }
+  section.part { padding-top: 22px; margin-top: 34px; border-top: 2px solid var(--ink); }
+  .num { color: var(--accent); margin-right: 8px; }
+  .toc { display: flex; flex-wrap: wrap; gap: 0 18px; margin: 0 0 8px; padding: 0; list-style: none; }
+  .toc a { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); font-weight: 600; text-decoration: none; border-bottom: 2px solid transparent; }
+  .toc a:hover { border-bottom-color: var(--accent); }
+  .pair { display: grid; gap: 12px; margin: 16px 0; }
+  @media (min-width: 560px) { .pair { grid-template-columns: 1fr 1fr; } }
+  .role { border-top: 4px solid var(--ink); }
+  .role.client { border-top-color: var(--accent); }
+  .role ul { margin: 0; padding-left: 18px; }
+  .role li { margin-bottom: 4px; }
+  .analogy { border-left: 4px solid var(--accent); padding: 12px 14px; background: var(--surface); margin: 16px 0; }
+  .diagram { width: 100%; height: auto; display: block; margin: 8px 0 16px; }
+  .diagram text { font: 600 13px 'Inter Tight', sans-serif; fill: var(--ink); }
+  .diagram .soft { fill: var(--muted); font-weight: 500; }
+  .diagram .box { fill: var(--surface); stroke: var(--ink); stroke-width: 2; }
+  .diagram .req { stroke: var(--accent); stroke-width: 2.5; }
+  .diagram .res { stroke: var(--ink); stroke-width: 2.5; }
+  ol.steps { padding-left: 22px; margin: 0 0 16px; }
+  ol.steps li { margin-bottom: 10px; }
+  pre { margin: 6px 0 14px; padding: 12px 14px; background: var(--surface); border-left: 4px solid var(--line); overflow-x: auto; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre; }
+  pre.request { border-left-color: var(--accent); }
+  pre.response { border-left-color: var(--ink); }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0 14px; font-size: .92rem; }
+  th, td { text-align: left; padding: 8px 6px; border-top: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 700; white-space: nowrap; }
+  ol.todo { padding-left: 22px; margin: 0 0 16px; color: var(--muted); }
+  .verdict { margin: 16px 0; padding: 14px 16px; border-left: 4px solid var(--line); background: var(--surface); }
+  .verdict.good { border-color: var(--ok); }
+  .verdict.warn { border-color: var(--warn); }
+  .verdict.bad { border-color: var(--bad); }
+  .verdict b { display: block; font-size: 1.05rem; margin-bottom: 4px; }
+  ul.remember { padding-left: 20px; margin: 0 0 16px; }
+  ul.remember li { margin-bottom: 8px; }
+  details { border-top: 1px solid var(--line); }
+  details:last-of-type { border-bottom: 1px solid var(--line); }
+  summary { cursor: pointer; padding: 12px 0; min-height: 44px; font-weight: 600; list-style-position: outside; }
+  details p { color: var(--muted); }
+  .guess { margin: 0 0 20px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); }
+  .guess p { margin: 0 0 10px; }
+  .guess .options { display: grid; gap: 8px; }
+  .guess .options button { text-align: left; }
+  .guess button[aria-pressed="true"] { border-color: var(--ink); }
+  .guess button.right { border-left: 4px solid var(--ok); }
+  .guess button.wrong { border-left: 4px solid var(--bad); }
+  .guess .answer { margin: 12px 0 0; }
+  .mixup { margin: 16px 0; padding: 12px 14px; border: 1px solid var(--line); border-left: 4px solid var(--warn); }
+  .mixup p { margin: 0 0 6px; }
+  .mixup p:last-child { margin: 0; }
+  figure { margin: 8px 0 20px; }
+  figcaption { color: var(--muted); font-size: .92rem; margin-top: 6px; }
+  .diagram .edge { fill: none; stroke: var(--ink); stroke-width: 2; }
+  .diagram .edge.async { stroke-dasharray: 6 5; }
+  .diagram .tip { fill: var(--ink); }
+  .diagram .now .box, .diagram .box.now, .diagram .lit .box, .diagram .box.lit { stroke: var(--accent); stroke-width: 3; }
+  .diagram .now .edge, .diagram .edge.now, .diagram .lit .edge, .diagram .edge.lit { stroke: var(--accent); stroke-width: 3; }
+  .stepper.js [data-s], .stepper.js [data-only] { transition: opacity .25s ease; }
+  .stepper.js .off { opacity: 0; pointer-events: none; }
+  .stepper.js ol.captions { list-style: none; padding-left: 0; }
+  .stepper.js ol.captions li { display: none; }
+  .stepper.js ol.captions li.current { display: list-item; }
+  ol.captions { padding-left: 22px; margin: 4px 0 8px; min-height: 3em; }
+  .step-controls { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+  .step-controls .count { flex: 1; text-align: center; color: var(--muted); font-size: .92rem; }
+  button.ref { all: unset; font-weight: 700; border-bottom: 2px dotted var(--accent); cursor: pointer; }
+  button.ref:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button.ref.lit { background: var(--surface); }
+  h3.after-q { margin-top: 24px; }
+  ol.sources { padding-left: 22px; margin: 0; }
+  ol.sources li { margin-bottom: 12px; }
+  ol.sources a { color: var(--ink); font-weight: 600; text-decoration-color: var(--accent); text-underline-offset: 3px; overflow-wrap: anywhere; }
+  ol.sources .pub, ol.sources .note { display: block; color: var(--muted); font-size: .92rem; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+  .diagram .lbl { font-size: 12px; fill: var(--ink); font-weight: 600; paint-order: stroke; stroke: var(--bg); stroke-width: 5px; stroke-linejoin: round; }
+  .diagram .code { font: 500 12px ui-monospace, SFMono-Regular, Menlo, monospace; fill: var(--ink); white-space: pre; }
+  .ctl { margin: 0 0 14px; }
+  .ctl-label { font-weight: 700; margin: 0 0 6px; }
+  .seg { display: flex; flex-wrap: wrap; gap: 8px; }
+  .seg button[aria-pressed="true"] { border-color: var(--ink); background: var(--bg); box-shadow: inset 0 -3px 0 var(--accent); }
+  .seg button code { font-size: .9em; }
+  .row2 { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; margin: 4px 0 14px; }
+  ul.parts { padding-left: 20px; margin: 0 0 12px; }
+  ul.parts li { margin-bottom: 8px; }
+  ol.notes { padding-left: 22px; margin: 0 0 16px; }
+  ol.notes li { margin-bottom: 8px; }
+  table.wrap th { white-space: normal; }
+  pre.live { margin-top: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<main>
+  <h1>REST</h1>
+  <p class="lede">REST is the style behind most web APIs you will call or build. It says an API is a set of resources, each with its own URL, that every client reads and changes with the same few HTTP methods. This page explains the style, walks one request through it, then lets you drive a REST API.</p>
+
+  <div class="guess" data-guess>
+    <p><b>Guess first.</b> An API has the endpoint <code>POST /deleteOrder?id=7</code>. It works, and it returns JSON. Is it REST?</p>
+    <div class="options">
+      <button type="button" data-correct>No, the action belongs in the method, not the path</button>
+      <button type="button">Yes, it uses HTTP and returns JSON</button>
+    </div>
+    <p class="answer" hidden>In REST, the path names a thing, such as <code>/orders/7</code>, and the method names the action, such as <code>DELETE</code>. Part 1 explains why that split matters.</p>
+  </div>
+
+  <ul class="toc">
+    <li><a href="#idea">Overview of REST</a></li>
+    <li><a href="#how">How a REST API handles a request</a></li>
+    <li><a href="#try">Drive an orders API</a></li>
+    <li><a href="#check">Practice questions</a></li>
+    <li><a href="#sources">Sources and further reading</a></li>
+  </ul>
+
+  <section class="part" id="idea">
+    <h2><span class="num">1</span>Overview of REST</h2>
+    <p>A food app needs to list orders, show one order, place a new one, change it and cancel it. One way is to invent an endpoint for each job: <code>/getOrders</code>, <code>/createOrder</code>, <code>/cancelOrder</code>. Every new job then needs a new endpoint, and every client must learn each one.</p>
+    <p><b>REST</b>, short for Representational State Transfer, takes another approach. Roy Fielding described it in his 2000 dissertation as a set of constraints for building systems like the web. Its core ideas are these:</p>
+    <ul class="parts">
+      <li>A <b>resource</b> is any thing the API exposes, such as one order or the list of all orders. Each resource has its own URL, such as <code>/orders/7</code>.</li>
+      <li>A client never touches the resource itself. It gets a <b>representation</b> of it, such as a JSON document of the order's current state, and sends representations back to change it.</li>
+      <li>A <b>uniform interface</b> means every resource is used through the same small set of methods with fixed meanings: GET reads, POST creates, PUT replaces, PATCH changes part, DELETE removes. A client that knows these methods can use any resource.</li>
+      <li>Each request is self-contained, as HTTP's statelessness already requires. The server keeps no memory of the client between requests.</li>
+      <li>Representations carry links to related resources and next actions. This is called <b>hypermedia</b>. A client follows the links instead of building URLs by hand, as a browser follows links on a web page.</li>
+    </ul>
+    <div class="analogy">Think of a library. Every book has a shelf mark, which is its URL. The desk offers the same few actions for every book: look it up, borrow it, return it. You never get the book's master record, only a copy of it on paper, which is the representation. The analogy stops at the actions. A library invents new services over time, but a REST API keeps the same methods and adds new resources instead.</div>
+    <div class="mixup">
+      <p><b>Common mix-up</b></p>
+      <p>"Any API that sends JSON over HTTP is a REST API."</p>
+      <p>REST is a set of constraints, and JSON isn't one of them. MDN notes that people often call any HTTP API "REST" loosely. An API with verbs in its paths, such as <code>/deleteOrder</code>, uses HTTP without the uniform interface.</p>
+    </div>
+  </section>
+
+  <section class="part" id="how">
+    <h2><span class="num">2</span>How a REST API handles a request</h2>
+    <p>Tap Next to follow one request for order 7.</p>
+    <figure class="stepper" data-stepper>
+      <svg class="diagram" viewBox="0 0 340 284" role="img" aria-label="A client sends GET /orders/7 to a server that holds the resources /orders, /orders/7 and /orders/8, and gets back a JSON representation with links">
+        <defs>
+          <marker id="tip-rest" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="tip" d="M0 0 10 5 0 10z"/></marker>
+        </defs>
+        <rect class="box" x="4" y="20" width="92" height="104"/>
+        <text x="50" y="76" text-anchor="middle">Client</text>
+        <rect class="box" x="220" y="20" width="116" height="104"/>
+        <text x="278" y="38" text-anchor="middle">Server</text>
+        <text class="code" x="232" y="58">/orders</text>
+        <text class="code" x="232" y="108">/orders/8</text>
+        <g data-s="1">
+          <rect class="box" x="226" y="66" width="104" height="22"/>
+          <text class="code" x="232" y="82">/orders/7</text>
+        </g>
+        <g data-s="2"><path class="edge" d="M96 50H216" marker-end="url(#tip-rest)"/><text class="lbl" x="156" y="42" text-anchor="middle">GET /orders/7</text></g>
+        <g data-s="3">
+          <path class="edge" d="M220 80H100" marker-end="url(#tip-rest)"/><text class="lbl" x="160" y="72" text-anchor="middle">200 + JSON</text>
+          <rect class="box" x="4" y="140" width="332" height="138"/>
+          <text class="code" x="14" y="162">{"id": 7, "dish": "Laksa",</text>
+          <text class="code" x="14" y="182"> "qty": 2, "note": "No chilli",</text>
+          <text class="code" x="14" y="266">}</text>
+        </g>
+        <g data-s="4">
+          <text class="code" x="14" y="204"> "links": {</text>
+          <text class="code" x="14" y="224">   "self": "/orders/7",</text>
+          <text class="code" x="14" y="244">   "collection": "/orders"}</text>
+        </g>
+        <g data-s="5"><path class="edge" d="M96 112H216" marker-end="url(#tip-rest)"/><text class="lbl" x="156" y="104" text-anchor="middle">PATCH + token</text></g>
+      </svg>
+      <ol class="captions">
+        <li>The server holds resources, and each one has its own URL. Order 7 lives at /orders/7.</li>
+        <li>The client picks a method from the uniform interface. GET means read, so it sends GET /orders/7.</li>
+        <li>The server answers 200 with a representation of order 7, a JSON document of its current state.</li>
+        <li>The representation carries links to related resources. The client follows these links instead of building URLs.</li>
+        <li>The next request, a PATCH to change the order, carries everything again, including the token. The server kept nothing from the GET.</li>
+      </ol>
+      <figcaption>In REST, the URL names the resource, the method names the action, and the response sends a representation with links onward.</figcaption>
+    </figure>
+
+    <h3>Creating an order, line by line</h3>
+    <p>To add to a collection, the client sends POST to the collection's URL.</p>
+    <pre class="request"><code>POST /orders HTTP/1.1
+Host: api.restaurant.example
+Content-Type: application/json
+
+{"dish": "Roti canai", "qty": 1}</code></pre>
+    <pre class="response"><code>HTTP/1.1 201 Created
+Location: /orders/9
+Content-Type: application/json
+
+{"id": 9, "dish": "Roti canai", "qty": 1,
+ "links": {"self": "/orders/9", "collection": "/orders"}}</code></pre>
+    <ol class="notes">
+      <li>The path is a plural noun, <code>/orders</code>. The method, POST, says what to do with it.</li>
+      <li>The server picks the new order's URL and returns it in the <code>Location</code> header with 201 Created.</li>
+      <li>The body is a representation of the new resource, with links the client can follow next.</li>
+    </ol>
+
+    <h3>The uniform interface on a collection and an item</h3>
+    <table class="wrap">
+      <tr><th>Method</th><th><code>/orders</code>, the collection</th><th><code>/orders/7</code>, one item</th></tr>
+      <tr><td><code>GET</code></td><td>List the orders</td><td>Read order 7</td></tr>
+      <tr><td><code>POST</code></td><td>Create a new order</td><td>405, not allowed</td></tr>
+      <tr><td><code>PUT</code></td><td>405, not allowed</td><td>Replace order 7 with the body</td></tr>
+      <tr><td><code>PATCH</code></td><td>405, not allowed</td><td>Change some fields of order 7</td></tr>
+      <tr><td><code>DELETE</code></td><td>405, not allowed</td><td>Remove order 7</td></tr>
+    </table>
+    <p>RFC 5789 explains the PUT and PATCH split. PUT replaces the whole resource, so a field missing from the body is gone. PATCH applies only the changes in the body. When a resource doesn't support a method, the server answers 405 Method Not Allowed with an <code>Allow</code> header that lists the methods it does support.</p>
+    <p>Fielding's full list of constraints also covers caching and layers, such as proxies between client and server. Leonard Richardson's maturity model, which Martin Fowler explains, ranks APIs by how far they go: resources first, then HTTP methods and status codes used as HTTP intends, then hypermedia links.</p>
+  </section>
+
+  <section class="part" id="try">
+    <h2><span class="num">3</span>Drive an orders API</h2>
+    <p>This API holds orders 7 and 8. Pick a method and a path, send it, and read the response.</p>
+    <ol class="todo">
+      <li>Predict, then check. Predict what PUT /orders/7 does to the note field, then send it. Reset the server and send PATCH /orders/7 to compare.</li>
+      <li>Send POST /orders, read the Location header, then send GET to the URL it names.</li>
+      <li>Send POST /orders/7 and read the Allow header.</li>
+      <li>Send GET /getOrder?id=7.</li>
+    </ol>
+    <section class="card">
+      <div class="ctl">
+        <p class="ctl-label">Method</p>
+        <div class="seg" data-key="method">
+          <button type="button" data-v="GET" aria-pressed="false">GET</button>
+          <button type="button" data-v="POST" aria-pressed="false">POST</button>
+          <button type="button" data-v="PUT" aria-pressed="true">PUT</button>
+          <button type="button" data-v="PATCH" aria-pressed="false">PATCH</button>
+          <button type="button" data-v="DELETE" aria-pressed="false">DELETE</button>
+        </div>
+      </div>
+      <div class="ctl">
+        <p class="ctl-label">Path</p>
+        <div class="seg" data-key="path">
+          <button type="button" data-v="/orders" aria-pressed="false"><code>/orders</code></button>
+          <button type="button" data-v="/orders/7" aria-pressed="true"><code>/orders/7</code></button>
+          <button type="button" data-v="/orders/9" aria-pressed="false"><code>/orders/9</code></button>
+          <button type="button" data-v="/getOrder?id=7" aria-pressed="false"><code>/getOrder?id=7</code></button>
+        </div>
+      </div>
+      <h3>Your request</h3>
+      <pre class="request live"><code id="req"></code></pre>
+      <div class="row2">
+        <button type="button" class="primary" id="send">Send</button>
+        <button type="button" id="reset">Reset server</button>
+      </div>
+      <h3>The response</h3>
+      <pre class="response live"><code id="res">No response yet.</code></pre>
+    </section>
+    <div class="verdict" id="verdict" aria-live="polite"><b>Nothing sent yet</b>Predict what PUT /orders/7 does to the note field, then tap Send.</div>
+  </section>
+
+  <section class="part" id="check">
+    <h2><span class="num">4</span>Practice questions</h2>
+    <details>
+      <summary>In a REST API, what does the URL name, and what does the method name?</summary>
+      <p>The URL names a resource, such as <code>/orders/7</code>. The method names the action, such as GET to read it or DELETE to remove it.</p>
+    </details>
+    <details>
+      <summary>Why does a uniform interface make a new resource cheap to add?</summary>
+      <p>Clients, caches and tools already know what GET, POST, PUT, PATCH and DELETE mean. A new resource such as <code>/invoices</code> works with all of them at once, without a new verb to learn.</p>
+    </details>
+    <details>
+      <summary>You're adding payments. Which requests would create a payment for order 7 and then read it?</summary>
+      <p>POST to a collection such as <code>/orders/7/payments</code> to create it. The 201 response's Location header names the new resource, such as <code>/orders/7/payments/1</code>, and GET on that URL reads it.</p>
+    </details>
+    <details>
+      <summary>A client wants to change only the quantity of order 7. A teammate sends PUT with just {"qty": 3}. What goes wrong?</summary>
+      <p>PUT replaces the whole resource, so every field missing from the body, such as the dish and the note, may be wiped. PATCH changes only the fields in the body.</p>
+    </details>
+    <details>
+      <summary>On the HTTP requests and responses page, GET was a safe method. Which REST operations on an order may a crawler send without changing anything?</summary>
+      <p>Only GET and HEAD, such as <code>GET /orders/7</code>. POST, PUT, PATCH and DELETE all change the resource, so they never belong behind a plain link.</p>
+    </details>
+    <h3 class="after-q">What to remember</h3>
+    <ul class="remember">
+      <li>A REST API is a set of resources, each with its own URL named by a noun.</li>
+      <li>Clients get and send representations, such as JSON, never the resource itself.</li>
+      <li>The uniform interface gives every resource the same methods: GET reads, POST creates, PUT replaces, PATCH changes part, DELETE removes.</li>
+      <li>A server answers an unsupported method with 405 and an Allow header.</li>
+      <li>Hypermedia links in each representation tell the client where it can go next.</li>
+    </ul>
+  </section>
+
+  <section class="part" id="sources">
+    <h2>Sources and further reading</h2>
+    <ol class="sources">
+      <li><a href="https://developer.mozilla.org/en-US/docs/Glossary/REST" target="_blank" rel="noopener">REST</a><span class="pub">MDN Web Docs</span><span class="note">A short definition, and a note on how loosely people use the word.</span></li>
+      <li><a href="https://learn.microsoft.com/en-us/azure/architecture/best-practices/api-design" target="_blank" rel="noopener">Web API Design Best Practices</a><span class="pub">Microsoft Azure Architecture Center</span><span class="note">Practical rules for resource URLs, methods and collections.</span></li>
+      <li><a href="https://martinfowler.com/articles/richardsonMaturityModel.html" target="_blank" rel="noopener">Richardson Maturity Model</a><span class="pub">martinfowler.com</span><span class="note">The steps from one endpoint to resources, methods and hypermedia.</span></li>
+      <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/405" target="_blank" rel="noopener">405 Method Not Allowed</a><span class="pub">MDN Web Docs</span><span class="note">When to send 405, and why it needs an Allow header.</span></li>
+      <li><a href="https://rfc-editor.org/rfc/rfc5789.html" target="_blank" rel="noopener">RFC 5789: PATCH Method for HTTP</a><span class="pub">IETF</span><span class="note">The standard for partial changes, and how PATCH differs from PUT.</span></li>
+      <li><a href="https://ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm" target="_blank" rel="noopener">Representational State Transfer, chapter 5</a><span class="pub">Roy Fielding, UC Irvine</span><span class="note">The dissertation chapter that defined REST and its constraints.</span></li>
+    </ol>
+  </section>
+</main>
+<script>
+
+  function applyThemeFromQuery() {
+    const theme = new URLSearchParams(location.search).get('theme');
+    if (theme === 'dark' || theme === 'light') document.documentElement.dataset.theme = theme;
+  }
+  applyThemeFromQuery();
+
+  // Inside the site's frame: the site page shows the title and references, sizes the frame to fit,
+  // and scrolls itself when a contents link is tapped, so the reader sees one scrollbar.
+  function embedInSite() {
+    if (window.self === window.top) return;
+    document.documentElement.dataset.embedded = 'true';
+    const post = (msg) => window.parent.postMessage(msg, '*');
+    const report = () => post({ type: 'ag:height', height: Math.ceil(document.body.getBoundingClientRect().height) });
+    new ResizeObserver(report).observe(document.body);
+    window.addEventListener('load', report);
+    document.addEventListener('click', (e) => {
+      const a = e.target.closest('a[href^="#"]');
+      const id = a && a.getAttribute('href').slice(1);
+      const target = id && document.getElementById(id);
+      if (!target) return;
+      e.preventDefault();
+      post({ type: 'ag:scroll', top: Math.round(target.getBoundingClientRect().top + window.scrollY) });
+    });
+  }
+  embedInSite();
+
+  // Guess first: reveal the answer after one tap.
+  document.querySelectorAll('[data-guess]').forEach((box) => {
+    const answer = box.querySelector('.answer');
+    const options = box.querySelectorAll('.options button');
+    options.forEach((btn) => btn.addEventListener('click', () => {
+      options.forEach((b) => {
+        b.setAttribute('aria-pressed', String(b === btn));
+        b.classList.toggle('right', b.hasAttribute('data-correct'));
+        b.classList.toggle('wrong', b === btn && !b.hasAttribute('data-correct'));
+      });
+      if (!answer.dataset.text) answer.dataset.text = answer.textContent;
+      answer.textContent = (btn.hasAttribute('data-correct') ? 'You guessed right. ' : 'Not this time. ') + answer.dataset.text;
+      answer.hidden = false;
+    }));
+  });
+
+  // Steppers: Back and Next walk the figure one step at a time.
+  document.querySelectorAll('[data-stepper]').forEach((fig) => {
+    const caps = [...fig.querySelectorAll('ol.captions li')];
+    const total = caps.length;
+    if (!total) return;
+    const bar = document.createElement('div');
+    bar.className = 'step-controls';
+    bar.innerHTML = '<button type="button" data-go="-1">Back</button><span class="count" aria-live="polite"></span><button type="button" class="primary" data-go="1">Next</button>';
+    fig.querySelector('ol.captions').before(bar);
+    const [back, count, next] = bar.children;
+    let step = 1;
+    const show = () => {
+      fig.querySelectorAll('[data-s]').forEach((el) => {
+        const s = Number(el.dataset.s);
+        el.classList.toggle('off', s > step);
+        el.classList.toggle('now', s === step);
+      });
+      fig.querySelectorAll('[data-only]').forEach((el) => {
+        el.classList.toggle('off', !el.dataset.only.split(' ').map(Number).includes(step));
+      });
+      caps.forEach((li, i) => li.classList.toggle('current', i === step - 1));
+      count.textContent = `Step ${step} of ${total}`;
+      back.disabled = step === 1;
+      next.textContent = step === total ? 'Start again' : 'Next';
+    };
+    back.addEventListener('click', () => { step = Math.max(1, step - 1); show(); });
+    next.addEventListener('click', () => { step = step === total ? 1 : step + 1; show(); });
+    fig.classList.add('js');
+    show();
+  });
+
+  // Linked terms: tapping <button class="ref" data-ref="x"> lights every element with data-ref="x".
+  document.querySelectorAll('button.ref[data-ref]').forEach((btn) => btn.addEventListener('click', () => {
+    const on = !btn.classList.contains('lit');
+    document.querySelectorAll('.lit').forEach((el) => el.classList.remove('lit'));
+    if (on) document.querySelectorAll(`[data-ref~="${btn.dataset.ref}"]`).forEach((el) => el.classList.add('lit'));
+  }));
+
+  // The orders API simulation.
+  const $ = (id) => document.getElementById(id);
+  const BODIES = { POST: { dish: 'Roti canai', qty: 1 }, PUT: { dish: 'Laksa', qty: 3 }, PATCH: { qty: 3 } };
+  const fresh = () => ({ orders: { 7: { id: 7, dish: 'Laksa', qty: 2, note: 'No chilli' }, 8: { id: 8, dish: 'Nasi lemak', qty: 1, note: '' } }, nextId: 9 });
+  let db = fresh();
+  const settings = { method: 'PUT', path: '/orders/7' };
+  const fmt = (o) => JSON.stringify(o).replace(/":/g, '": ').replace(/,"/g, ', "').replace(/},{/g, '}, {');
+  const rep = (o) => ({ ...o, links: { self: `/orders/${o.id}`, collection: '/orders' } });
+
+  function requestText(s) {
+    const body = BODIES[s.method];
+    const lines = [`${s.method} ${s.path} HTTP/1.1`, 'Host: api.restaurant.example'];
+    if (body) lines.push('Content-Type: application/json');
+    return lines.join('\n') + (body ? `\n\n${fmt(body)}` : '');
+  }
+
+  const res = (code, headers, body) => ({ code, headers, body });
+  const notAllowed = (allow, s) => ({ res: res('405 Method Not Allowed', [`Allow: ${allow}`]), cls: 'warn',
+    title: `405, because ${s.path} doesn't support ${s.method}`,
+    text: `The resource exists, but it doesn't take ${s.method}. The Allow header lists the methods it does take: ${allow}. Every resource uses the same methods with the same meanings, and each one picks which of them it allows.` });
+
+  // One function takes the request and the current orders, and returns the response, the new orders and the verdict.
+  function model(s, state) {
+    const orders = { ...state.orders };
+    const next = { ...state, orders };
+    if (s.path.startsWith('/getOrder')) {
+      return { next, res: res('404 Not Found', ['Content-Type: application/json'], { error: 'No resource at /getOrder' }), cls: 'bad',
+        title: '404, because getOrder is an action, not a resource',
+        text: 'This path names an action. In REST the path names a resource, /orders/7, and the method GET says what to do with it. This API has no resource called getOrder.' };
+    }
+    if (s.path === '/orders') {
+      if (s.method === 'GET') {
+        const items = Object.values(orders).map((o) => ({ id: o.id, dish: o.dish, links: { self: `/orders/${o.id}` } }));
+        return { next, res: res('200 OK', ['Content-Type: application/json'], { items, links: { self: '/orders' } }), cls: 'good',
+          title: '200, with a representation of the collection',
+          text: 'GET on the collection returned every order. Each item carries a self link, so the client follows links instead of building URLs by hand.' };
+      }
+      if (s.method === 'POST') {
+        const id = state.nextId;
+        orders[id] = { id, ...BODIES.POST, note: '' };
+        next.nextId = id + 1;
+        return { next, res: res('201 Created', [`Location: /orders/${id}`, 'Content-Type: application/json'], rep(orders[id])), cls: 'good',
+          title: '201 Created, with the new URL in Location',
+          text: `POST on the collection created a new resource. The server chose its URL, /orders/${id}, and sent it in the Location header. Pick that path and send GET to read it.` };
+      }
+      return { next, ...notAllowed('GET, POST', s) };
+    }
+    const id = Number(s.path.split('/')[2]);
+    if (s.method === 'POST') return { next, ...notAllowed('GET, PUT, PATCH, DELETE', s) };
+    const order = orders[id];
+    if (!order) {
+      return { next, res: res('404 Not Found', ['Content-Type: application/json'], { error: `Order ${id} not found` }), cls: 'warn',
+        title: `404, because there is no order ${id}`,
+        text: id === 9 && state.nextId === 9
+          ? 'No order 9 exists yet. Create one with POST /orders, and the server tells you its URL in the Location header.'
+          : `There is no resource at /orders/${id}. It was never created, or a DELETE removed it.` };
+    }
+    if (s.method === 'GET') {
+      return { next, res: res('200 OK', ['Content-Type: application/json'], rep(order)), cls: 'good',
+        title: `200, with a representation of order ${id}`,
+        text: 'The server sent the order\'s current state as JSON, with links to itself and to its collection. The JSON is a representation. The server could send the same order as XML.' };
+    }
+    if (s.method === 'PUT') {
+      orders[id] = { id, ...BODIES.PUT };
+      const lost = order.note ? ' The body had no note, so the note "' + order.note + '" is gone.' : '';
+      return { next, res: res('200 OK', ['Content-Type: application/json'], rep(orders[id])), cls: order.note ? 'warn' : 'good',
+        title: 'PUT replaced the whole order',
+        text: `PUT swapped the order for exactly the body you sent.${lost} To change one field, reset the server and use PATCH.` };
+    }
+    if (s.method === 'PATCH') {
+      orders[id] = { ...order, ...BODIES.PATCH };
+      return { next, res: res('200 OK', ['Content-Type: application/json'], rep(orders[id])), cls: 'good',
+        title: 'PATCH changed only qty',
+        text: `PATCH applied only the field in the body. qty is now 3, and every other field${order.note ? ', including the note,' : ''} stayed as it was.` };
+    }
+    delete orders[id];
+    return { next, res: res('204 No Content', []), cls: 'good',
+      title: `204, and order ${id} is gone`,
+      text: `DELETE removed the resource at /orders/${id}. The response has no body. Send it again, and the server answers 404, because nothing is left there.` };
+  }
+
+  function responseText(r) {
+    return [`HTTP/1.1 ${r.code}`, ...r.headers].join('\n') + (r.body ? `\n\n${fmt(r.body)}` : '');
+  }
+  const esc = (x) => x.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const renderRequest = () => { $('req').innerHTML = esc(requestText(settings)); };
+
+  document.querySelectorAll('.seg').forEach((seg) => seg.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    settings[seg.dataset.key] = b.dataset.v;
+    seg.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    renderRequest();
+  }));
+  $('send').addEventListener('click', () => {
+    const out = model(settings, db);
+    db = out.next;
+    $('res').innerHTML = esc(responseText(out.res));
+    const v = $('verdict');
+    v.className = 'verdict ' + out.cls;
+    v.innerHTML = `<b>${out.title}</b>${out.text}`;
+  });
+  $('reset').addEventListener('click', () => {
+    db = fresh();
+    $('res').textContent = 'No response yet.';
+    const v = $('verdict');
+    v.className = 'verdict';
+    v.innerHTML = '<b>The server is back to orders 7 and 8</b>Order 7 has its note again.';
+  });
+  renderRequest();
+</script>
+</body>
+</html>

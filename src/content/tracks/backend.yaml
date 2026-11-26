@@ -19,7 +19,10 @@ sections:
   - id: apis
     title: "APIs"
     nodes:
-      - { id: rest, title: "REST" }
+      - id: rest
+        title: "REST"
+        artifacts: [rest]
+        terms: [rest, resource, representation, uniform-interface, hypermedia]
       - id: status-codes
         title: "Status codes and error bodies"
         terms: [status-code]
