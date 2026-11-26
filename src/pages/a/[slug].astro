@@ -11,7 +11,7 @@ export async function getStaticPaths() {
 }
 
 const { artifact } = Astro.props as { artifact: Artifact };
-const { title, summary } = artifact.data;
+const { title, summary, references } = artifact.data;
 const allTerms = await getTerms();
 const terms = artifact.data.terms.map((r) => allTerms.find((t) => t.id === r.id)).filter((t) => !!t);
 const { Content } = await render(artifact);
@@ -26,7 +26,7 @@ const place = await nodeForArtifact(artifact.id);
   </header>
 
   <div class="frame-wrap" data-pagefind-ignore>
-    <iframe id="artifact" title={title} data-src={src} sandbox="allow-scripts allow-popups" loading="lazy"></iframe>
+    <iframe id="artifact" title={title} data-src={src} sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox" loading="lazy"></iframe>
     <a class="full" href={src} target="_blank" rel="noopener">Open full screen</a>
   </div>
 
@@ -52,6 +52,24 @@ const place = await nodeForArtifact(artifact.id);
       </div>
     </section>
   )}
+
+  {references.length > 0 && (
+    <section class="row">
+      <h2 class="row__label">References</h2>
+      <div class="row__body">
+        <ol class="list refs">
+          {references.map((r) => (
+            <li>
+              <a class="entry" href={r.url} target="_blank" rel="noopener">
+                <span class="entry__title">{r.title}</span>
+                <span class="entry__text">{r.publisher}{r.note && <>. {r.note}</>}</span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  )}
 </Base>
 
 <script>
@@ -70,6 +88,7 @@ const place = await nodeForArtifact(artifact.id);
 
 <style>
   .page-head h1 { max-width: 18ch; }
+  .refs .entry__title { overflow-wrap: anywhere; }
   .place { display: inline-flex; align-items: center; min-height: 44px; margin-top: 12px; font-weight: 700; color: var(--accent); }
   .lede { font-size: 1.2rem; line-height: 1.4; max-width: 46ch; margin: 20px 0 0; }
   .frame-wrap { margin: 32px calc(-1 * var(--gutter)) 0; }

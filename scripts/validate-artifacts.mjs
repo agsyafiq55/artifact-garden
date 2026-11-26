@@ -66,6 +66,61 @@ function checkSelfContained(artHtml) {
   }
 }
 
+const MIN_SOURCES = 2;
+
+function frontmatterYaml(path) {
+  const m = readFileSync(path, 'utf8').match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!m) return null;
+  try { return parseYaml(m[1]); } catch { return null; }
+}
+
+function checkSources(artMd, artHtml) {
+  for (const slug of artMd) {
+    const file = `src/content/artifacts/${slug}.md`;
+    const fm = frontmatterYaml(join(ART_MD, `${slug}.md`));
+    if (!fm) { err(file, 'frontmatter is not valid YAML'); continue; }
+    const refs = Array.isArray(fm.references) ? fm.references : [];
+    if (refs.length < MIN_SOURCES) err(file, `needs at least ${MIN_SOURCES} references (see .claude/skills/add-artifact/RESEARCH.md)`);
+    const urls = refs.map((r) => r?.url).filter(Boolean);
+    if (new Set(urls).size !== urls.length) err(file, 'references: the same URL is listed twice');
+    for (const url of urls) {
+      if (/roadmap\.sh/.test(url)) err(file, `references: ${url} is on roadmap.sh, whose licence forbids reuse`);
+      if (/[?&]utm_/.test(url)) err(file, `references: strip the tracking parameters from ${url}`);
+    }
+    if (!artHtml.has(slug)) continue;
+    const html = readFileSync(join(ART_HTML, `${slug}.html`), 'utf8');
+    const htmlFile = `public/artifacts/${slug}.html`;
+    if (!/id=["']sources["']/.test(html)) err(htmlFile, 'missing the Sources section (id="sources") from templates/artifact-template.html');
+    const section = html.match(/id=["']sources["'][\s\S]*?<\/section>/)?.[0] ?? '';
+    const linked = [...section.matchAll(/<a\b[^>]*\shref=["']([^"']+)["']/gi)].map((m) => m[1].replace(/&amp;/g, '&'));
+    for (const url of urls) if (!linked.includes(url)) err(htmlFile, `Sources section does not link ${url}, which the .md lists in references`);
+    for (const url of linked) if (!urls.includes(url)) err(htmlFile, `Sources section links ${url}, which the .md does not list in references`);
+    const shared = urls.filter((u) => linked.includes(u));
+    if (linked.filter((u) => urls.includes(u)).join('\n') !== shared.join('\n')) err(htmlFile, 'Sources section lists the references in a different order from the .md');
+  }
+}
+
+const VAGUE_HEADINGS = ['the idea', 'how it works', 'try it', 'check yourself'];
+
+function checkHeadings(artHtml) {
+  for (const slug of artHtml) {
+    const html = readFileSync(join(ART_HTML, `${slug}.html`), 'utf8');
+    for (const m of html.matchAll(/<h2\b[^>]*>([\s\S]*?)<\/h2>/gi)) {
+      const text = m[1].replace(/<span class=["']num["']>[^<]*<\/span>/g, '').replace(/<[^>]+>/g, '').trim();
+      if (VAGUE_HEADINGS.includes(text.toLowerCase())) err(`public/artifacts/${slug}.html`, `heading "${text}" is too vague; name the subject, such as "Overview of client and server architecture" or "Practice questions" (TEACHING.md)`);
+    }
+  }
+}
+
+function checkOutsideLinks(artHtml) {
+  for (const slug of artHtml) {
+    const html = readFileSync(join(ART_HTML, `${slug}.html`), 'utf8');
+    for (const m of html.matchAll(/<a\b[^>]*\shref=["'](https?:\/\/[^"']+)["'][^>]*>/gi)) {
+      if (!/\starget=["']_blank["']/.test(m[0])) err(`public/artifacts/${slug}.html`, `link to ${m[1]} needs target="_blank" rel="noopener", or it opens inside the site's frame`);
+    }
+  }
+}
+
 function checkReferences(artMd, terms) {
   const explained = new Set();
   for (const slug of artMd) {
@@ -97,13 +152,13 @@ const BANNED_CHARS = [
 const BANNED_WORDS = /\b(additionally|crucial|delve[sd]?|enhance[sd]?|foster(s|ed)?|landscape|pivotal|showcase[sd]?|testament|underscores?|vibrant|leverag(e|es|ed|ing)|utiliz(e|es|ed|ing)|seamless(ly)?|serves as|stands as|not just|in order to|it is important to note)\b/i;
 
 function stripCode(text) {
-  return text.replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<code>[\s\S]*?<\/code>/gi, '').replace(/`[^`\n]*`/g, '');
+  return text.replace(/<style[\s\S]*?<\/style>/gi, '').replace(/\shref=["'][^"']*["']/gi, '').replace(/<code>[\s\S]*?<\/code>/gi, '').replace(/`[^`\n]*`/g, '');
 }
 
 function checkWriting(file, text) {
   const lines = stripCode(text).split('\n');
   lines.forEach((line, i) => {
-    if (/^prompt:/.test(line)) return;
+    if (/^prompt:/.test(line) || /^\s*(-\s*)?url:/.test(line)) return;
     for (const [re, why] of BANNED_CHARS) if (re.test(line)) err(`${file}:${i + 1}`, `${why} (WRITING.md): ${line.trim().slice(0, 80)}`);
     const word = line.match(BANNED_WORDS);
     if (word) err(`${file}:${i + 1}`, `"${word[0]}" is banned by WRITING.md: ${line.trim().slice(0, 80)}`);
@@ -145,6 +200,9 @@ const artHtml = new Set(list(ART_HTML, '.html'));
 checkPairing(artMd, artHtml);
 checkSelfContained(artHtml);
 checkReferences(artMd, terms);
+checkSources(artMd, artHtml);
+checkOutsideLinks(artHtml);
+checkHeadings(artHtml);
 checkAllWriting(artMd, terms, artHtml);
 checkTracks(artMd, terms);
 

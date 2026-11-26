@@ -111,6 +111,10 @@
   details:last-of-type { border-bottom: 1px solid var(--line); }
   summary { cursor: pointer; padding: 12px 0; min-height: 44px; font-weight: 600; list-style-position: outside; }
   details p { color: var(--muted); }
+  ol.sources { padding-left: 22px; margin: 0; }
+  ol.sources li { margin-bottom: 12px; }
+  ol.sources a { color: var(--ink); font-weight: 600; text-decoration-color: var(--accent); text-underline-offset: 3px; overflow-wrap: anywhere; }
+  ol.sources .pub, ol.sources .note { display: block; color: var(--muted); font-size: .92rem; }
 </style>
 </head>
 <body>
@@ -119,14 +123,15 @@
   <p class="lede">Almost every app you use is split into two programs. One runs on your device and asks for things. The other runs somewhere else and answers. This page explains how the two talk, then lets you run the conversation yourself.</p>
 
   <ul class="toc">
-    <li><a href="#idea">The idea</a></li>
-    <li><a href="#cycle">One request, step by step</a></li>
-    <li><a href="#try">Try it</a></li>
-    <li><a href="#check">Check yourself</a></li>
+    <li><a href="#idea">Overview of client and server architecture</a></li>
+    <li><a href="#cycle">How a request and response work</a></li>
+    <li><a href="#try">Simulate a restaurant app</a></li>
+    <li><a href="#check">Practice questions</a></li>
+    <li><a href="#sources">Sources and further reading</a></li>
   </ul>
 
   <section class="part" id="idea">
-    <h2><span class="num">1</span>The idea</h2>
+    <h2><span class="num">1</span>Overview of client and server architecture</h2>
     <p>A <b>client</b> is a program that asks for something. A <b>server</b> is a program that waits for those requests, does the work, and sends back an answer. The browser on your laptop and the app on your phone are clients. The computer that stores your orders, messages or photos runs a server.</p>
 
     <div class="pair">
@@ -156,7 +161,7 @@
   </section>
 
   <section class="part" id="cycle">
-    <h2><span class="num">2</span>One request, step by step</h2>
+    <h2><span class="num">2</span>How a request and response work</h2>
 
     <svg class="diagram" viewBox="0 0 340 150" role="img" aria-label="The client sends a request to the server, the server does the work, then sends a response back to the client">
       <defs>
@@ -203,7 +208,7 @@ Content-Type: application/json
   </section>
 
   <section class="part" id="try">
-    <h2><span class="num">3</span>Try it</h2>
+    <h2><span class="num">3</span>Simulate a restaurant app</h2>
     <p>Two clients, a phone app and a browser, talk to one restaurant server. Every message you send appears in the log as a request and its response.</p>
     <ol class="todo">
       <li>Get the menu from the phone.</li>
@@ -253,7 +258,7 @@ Content-Type: application/json
   </section>
 
   <section class="part" id="check">
-    <h2><span class="num">4</span>Check yourself</h2>
+    <h2><span class="num">4</span>Practice questions</h2>
     <h3>What to remember</h3>
     <ul class="remember">
       <li>The client always starts the conversation. A server only answers.</li>
@@ -278,6 +283,16 @@ Content-Type: application/json
       <summary>An order request timed out. Did the server get the order?</summary>
       <p>The client can't tell. The request may have been lost on the way, or the server may have stored the order and the response got lost. Retrying safely needs care, which the idempotency topic covers later on the roadmap.</p>
     </details>
+  </section>
+
+  <section class="part" id="sources">
+    <h2>Sources and further reading</h2>
+    <ol class="sources">
+      <li><a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Server-side/First_steps/Client-Server_overview" target="_blank" rel="noopener">Client-server overview</a><span class="pub">MDN Web Docs</span><span class="note">Follows one request from the browser to the server and back, with a worked example.</span></li>
+      <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview" target="_blank" rel="noopener">Overview of HTTP</a><span class="pub">MDN Web Docs</span><span class="note">A short tour of HTTP messages, connections and what the protocol controls.</span></li>
+      <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status" target="_blank" rel="noopener">HTTP response status codes</a><span class="pub">MDN Web Docs</span><span class="note">Every standard status code, grouped into its five classes.</span></li>
+      <li><a href="https://www.rfc-editor.org/rfc/rfc9110.html" target="_blank" rel="noopener">RFC 9110: HTTP Semantics</a><span class="pub">IETF</span><span class="note">The standard behind HTTP methods and status codes.</span></li>
+    </ol>
   </section>
 </main>
 <script>

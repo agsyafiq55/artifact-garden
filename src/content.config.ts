@@ -5,6 +5,14 @@ import { TOPIC_IDS } from './lib/topics';
 
 const slugs = (collection: 'terms') => z.array(reference(collection)).default([]);
 
+const reference_ = z.object({
+  title: z.string(),
+  publisher: z.string(),
+  url: z.string().regex(/^https:\/\/\S+$/, 'Reference URLs are full https links.'),
+  kind: z.enum(['spec', 'docs', 'paper', 'book', 'course', 'article', 'video']),
+  note: z.string().optional(),
+});
+
 const artifacts = defineCollection({
   loader: glob({ pattern: '*.md', base: './src/content/artifacts' }),
   schema: z.object({
@@ -15,6 +23,7 @@ const artifacts = defineCollection({
     created: z.coerce.date(),
     terms: slugs('terms'),
     prompt: z.string().optional(),
+    references: z.array(reference_).default([]),
   }),
 });
 
