@@ -11,7 +11,8 @@ sections:
         terms: [client, server, request-response-model, single-source-of-truth]
       - id: http
         title: "HTTP requests and responses"
-        terms: [http-method]
+        artifacts: [http-requests-and-responses]
+        terms: [http-method, start-line, http-header, message-body, content-type, safe-method, stateless-protocol]
       - { id: dns, title: "DNS" }
       - { id: tls, title: "TLS and HTTPS" }
       - { id: tcp-udp, title: "TCP and UDP", level: extra }
