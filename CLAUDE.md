@@ -17,6 +17,9 @@ The owner mostly works from Claude Code on the web, on a phone. Keep replies sho
 | Vocab term, one card per file | `src/content/terms/<slug>.md` |
 | Starter HTML for new artifacts | `templates/artifact-template.html` |
 | Writing rules for all reader-facing text | `.claude/skills/add-artifact/WRITING.md` |
+| How to research definitions and pick references | `.claude/skills/add-artifact/RESEARCH.md` |
+| How an artifact teaches, with the learning research behind it | `.claude/skills/add-artifact/TEACHING.md` |
+| How to draw diagrams, steppers and live figures | `.claude/skills/add-artifact/DIAGRAMS.md` |
 | Schemas | `src/content.config.ts` |
 | Topic list | `src/lib/topics.ts` |
 | Backend roadmap: ordered sections and nodes | `src/content/tracks/backend.yaml` |
@@ -34,7 +37,9 @@ Tags are free-form, lowercase and kebab-case. Reuse existing tags where they fit
 - **Commit straight to `main`.** Don't open branches or PRs. If pushing to main is rejected, follow the fallback in the `add-artifact` skill.
 - **Never commit while `npm run check` fails.** Fix the error first. The check runs `astro check`, then `scripts/validate-artifacts.mjs`, then a full build.
 - An artifact is one self-contained HTML file. External scripts and styles may only come from cdnjs.cloudflare.com, cdn.jsdelivr.net, unpkg.com, esm.sh or Google Fonts. Don't use relative paths, and don't add other files to `public/`.
-- Artifacts teach before they demo: the idea, how it works, try it, check yourself. The `add-artifact` skill has the details.
+- Artifacts teach before they demo: a guess-first question, an overview, how the mechanism works, a simulation, practice questions, then sources. `TEACHING.md` has the details.
+- Headings name their subject, such as "Overview of client and server architecture" and "Practice questions". Vague labels such as "The idea" or "Check yourself" fail `npm run check`.
+- Every artifact cites 2 to 6 references, found and checked as `RESEARCH.md` says. They are listed in the `.md` frontmatter as `references` and again in the HTML Sources section, and `npm run check` fails when the two differ. Never write a URL from memory.
 - Artifacts are mobile-first. They work at 375px wide, use tap targets of at least 44px, and never scroll sideways. They support light and dark mode with the template's color tokens and its `?theme=` snippet.
 - Everything a reader sees follows `.claude/skills/add-artifact/WRITING.md`: artifact text, script messages, summaries, notes and term fields. `npm run check` enforces its mechanical rules.
 - A term definition is one line of plain English, at most 180 characters. The analogy is everyday and non-technical. The example shows the term in real engineering talk or code. Wrap code in backticks.
