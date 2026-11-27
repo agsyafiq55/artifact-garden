@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Authentication and authorization</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff; --surface: #f3f3f1; --ink: #111111; --muted: #505050; --line: #dcdcdc;
+    --accent: #e2231a; --ok: #17783a; --bad: #e2231a; --warn: #a96d00;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f0f0f; --surface: #181818; --ink: #f2f2f2; --muted: #a6a6a6; --line: #2e2e2e;
+      --accent: #ff3b2f; --ok: #4cc27a; --bad: #ff3b2f; --warn: #e0a83a; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f0f0f; --surface: #181818; --ink: #f2f2f2; --muted: #a6a6a6; --line: #2e2e2e;
+    --accent: #ff3b2f; --ok: #4cc27a; --bad: #ff3b2f; --warn: #e0a83a; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 'Inter Tight', system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1, h2 { font-family: 'Inter Tight', Helvetica, Arial, sans-serif; font-weight: 700; letter-spacing: -0.03em; }
+  h1 { font-size: 1.9rem; line-height: 1.15; margin: 0 0 8px; }
+  h2 { font-size: 1.15rem; margin: 0 0 10px; }
+  p.lede { color: var(--muted); margin: 0 0 20px; }
+  :root[data-embedded] main > h1, :root[data-embedded] #sources, :root[data-embedded] .toc li:has(a[href="#sources"]) { display: none; }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .86em; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 0; padding: 16px; }
+  button { font: 600 .95rem 'Inter Tight', sans-serif; min-height: 44px; padding: 10px 16px; border-radius: 0; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--surface); border-color: transparent; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button:not(:disabled):hover { border-color: var(--ink); }
+  button:not(:disabled):active { transform: scale(.98); }
+  h2 { font-size: 1.35rem; margin: 0 0 12px; letter-spacing: -0.025em; }
+  h3 { font-size: 1rem; margin: 0 0 6px; letter-spacing: -0.01em; }
+  p { margin: 0 0 12px; }
+  section.part { padding-top: 22px; margin-top: 34px; border-top: 2px solid var(--ink); }
+  .num { color: var(--accent); margin-right: 8px; }
+  .toc { display: flex; flex-wrap: wrap; gap: 0 18px; margin: 0 0 8px; padding: 0; list-style: none; }
+  .toc a { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); font-weight: 600; text-decoration: none; border-bottom: 2px solid transparent; }
+  .toc a:hover { border-bottom-color: var(--accent); }
+  .pair { display: grid; gap: 12px; margin: 16px 0; }
+  @media (min-width: 560px) { .pair { grid-template-columns: 1fr 1fr; } }
+  .role { border-top: 4px solid var(--ink); }
+  .role.client { border-top-color: var(--accent); }
+  .role ul { margin: 0; padding-left: 18px; }
+  .role li { margin-bottom: 4px; }
+  .analogy { border-left: 4px solid var(--accent); padding: 12px 14px; background: var(--surface); margin: 16px 0; }
+  .diagram { width: 100%; height: auto; display: block; margin: 8px 0 16px; }
+  .diagram text { font: 600 13px 'Inter Tight', sans-serif; fill: var(--ink); }
+  .diagram .soft { fill: var(--muted); font-weight: 500; }
+  .diagram .box { fill: var(--surface); stroke: var(--ink); stroke-width: 2; }
+  .diagram .req { stroke: var(--accent); stroke-width: 2.5; }
+  .diagram .res { stroke: var(--ink); stroke-width: 2.5; }
+  ol.steps { padding-left: 22px; margin: 0 0 16px; }
+  ol.steps li { margin-bottom: 10px; }
+  pre { margin: 6px 0 14px; padding: 12px 14px; background: var(--surface); border-left: 4px solid var(--line); overflow-x: auto; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre; }
+  pre.request { border-left-color: var(--accent); }
+  pre.response { border-left-color: var(--ink); }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0 14px; font-size: .92rem; }
+  th, td { text-align: left; padding: 8px 6px; border-top: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 700; white-space: nowrap; }
+  ol.todo { padding-left: 22px; margin: 0 0 16px; color: var(--muted); }
+  .verdict { margin: 16px 0; padding: 14px 16px; border-left: 4px solid var(--line); background: var(--surface); }
+  .verdict.good { border-color: var(--ok); }
+  .verdict.warn { border-color: var(--warn); }
+  .verdict.bad { border-color: var(--bad); }
+  .verdict b { display: block; font-size: 1.05rem; margin-bottom: 4px; }
+  ul.remember { padding-left: 20px; margin: 0 0 16px; }
+  ul.remember li { margin-bottom: 8px; }
+  details { border-top: 1px solid var(--line); }
+  details:last-of-type { border-bottom: 1px solid var(--line); }
+  summary { cursor: pointer; padding: 12px 0; min-height: 44px; font-weight: 600; list-style-position: outside; }
+  details p { color: var(--muted); }
+  .guess { margin: 0 0 20px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); }
+  .guess p { margin: 0 0 10px; }
+  .guess .options { display: grid; gap: 8px; }
+  .guess .options button { text-align: left; }
+  .guess button[aria-pressed="true"] { border-color: var(--ink); }
+  .guess button.right { border-left: 4px solid var(--ok); }
+  .guess button.wrong { border-left: 4px solid var(--bad); }
+  .guess .answer { margin: 12px 0 0; }
+  .mixup { margin: 16px 0; padding: 12px 14px; border: 1px solid var(--line); border-left: 4px solid var(--warn); }
+  .mixup p { margin: 0 0 6px; }
+  .mixup p:last-child { margin: 0; }
+  figure { margin: 8px 0 20px; }
+  figcaption { color: var(--muted); font-size: .92rem; margin-top: 6px; }
+  .diagram .edge { fill: none; stroke: var(--ink); stroke-width: 2; }
+  .diagram .edge.async { stroke-dasharray: 6 5; }
+  .diagram .tip { fill: var(--ink); }
+  .diagram .now .box, .diagram .box.now, .diagram .lit .box, .diagram .box.lit { stroke: var(--accent); stroke-width: 3; }
+  .diagram .now .edge, .diagram .edge.now, .diagram .lit .edge, .diagram .edge.lit { stroke: var(--accent); stroke-width: 3; }
+  .stepper.js [data-s], .stepper.js [data-only] { transition: opacity .25s ease; }
+  .stepper.js .off { opacity: 0; pointer-events: none; }
+  .stepper.js ol.captions { list-style: none; padding-left: 0; }
+  .stepper.js ol.captions li { display: none; }
+  .stepper.js ol.captions li.current { display: list-item; }
+  ol.captions { padding-left: 22px; margin: 4px 0 8px; min-height: 3em; }
+  .step-controls { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+  .step-controls .count { flex: 1; text-align: center; color: var(--muted); font-size: .92rem; }
+  button.ref { all: unset; font-weight: 700; border-bottom: 2px dotted var(--accent); cursor: pointer; }
+  button.ref:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button.ref.lit { background: var(--surface); }
+  h3.after-q { margin-top: 24px; }
+  ol.sources { padding-left: 22px; margin: 0; }
+  ol.sources li { margin-bottom: 12px; }
+  ol.sources a { color: var(--ink); font-weight: 600; text-decoration-color: var(--accent); text-underline-offset: 3px; overflow-wrap: anywhere; }
+  ol.sources .pub, ol.sources .note { display: block; color: var(--muted); font-size: .92rem; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+  .diagram .box.fail { stroke: var(--bad); stroke-dasharray: 5 4; }
+  .diagram .cross { stroke: var(--bad); stroke-width: 2.5; fill: none; }
+  .diagram text.bad { fill: var(--bad); }
+  .diagram text.ok { fill: var(--ok); }
+  .diagram .box.pass { stroke: var(--ok); }
+  .ctl { margin: 0 0 14px; }
+  .ctl > b { display: block; margin-bottom: 6px; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .seg button { text-align: left; }
+  .seg button[aria-pressed="true"] { border-color: var(--ink); border-left: 4px solid var(--accent); }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .row button { flex: 1 1 140px; }
+  .photo { display: flex; justify-content: space-between; gap: 8px; padding: 10px 12px; border: 1px solid var(--line); background: var(--bg); margin: 0 0 14px; }
+  .photo.gone { color: var(--muted); text-decoration: line-through; }
+  ol.trace { list-style: none; padding: 0; margin: 14px 0 0; }
+  ol.trace li { display: flex; justify-content: space-between; gap: 8px; padding: 10px 12px; border-left: 4px solid var(--line); background: var(--bg); margin-bottom: 6px; }
+  ol.trace li.pass { border-left-color: var(--ok); }
+  ol.trace li.fail { border-left-color: var(--bad); border-left-style: dashed; }
+  ol.trace li.skip { color: var(--muted); }
+  ol.trace li.bug { border-left-color: var(--warn); border-left-style: dashed; }
+  ol.trace span { font-weight: 600; }
+  label.toggle { display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; }
+  label.toggle input { width: 22px; height: 22px; accent-color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Authentication and authorization</h1>
+  <p class="lede">Authentication checks who sent a request. Authorization decides what that caller may do. Every API with user accounts runs both checks on every request, and each check fails with its own status code.</p>
+
+  <div class="guess" data-guess>
+    <p><b>Guess first.</b> Ana is logged in to a photo app, and her token is valid. Her phone asks for photo 42, which belongs to Ben. What should the API answer?</p>
+    <div class="options">
+      <button type="button">200 OK, because her token is valid</button>
+      <button type="button">401 Unauthorized, because she has to log in again</button>
+      <button type="button" data-correct>403 Forbidden, or 404 Not Found</button>
+    </div>
+    <p class="answer" hidden>Her valid token proves who she is, but the photo is Ben's, so the authorization check refuses. Part 2 walks through both checks.</p>
+  </div>
+
+  <ul class="toc">
+    <li><a href="#idea">Overview of authentication and authorization</a></li>
+    <li><a href="#how">How an API checks a request</a></li>
+    <li><a href="#try">Simulate the checks in a photo API</a></li>
+    <li><a href="#check">Practice questions</a></li>
+    <li><a href="#sources">Sources and further reading</a></li>
+  </ul>
+
+  <section class="part" id="idea">
+    <h2><span class="num">1</span>Overview of authentication and authorization</h2>
+    <p>Snapshelf is a photo app. Ana signs in once with her password, and her phone then sends a token with every request. Ben and Cleo use the same API, and Cleo is an admin who removes photos that break the rules.</p>
+    <p><b>Authentication</b>, or authn, checks that the caller is who they claim to be. The caller proves it with a <b>credential</b>: something only they have, such as a password, a session cookie or an access token. If the credential checks out, the server knows the caller's identity, such as the user <code>ana</code>.</p>
+    <p><b>Authorization</b>, or authz, decides whether that identity may take this action on this resource. A <b>permission</b> is one allowed action, such as "delete a photo". A policy says who holds it: owners may delete their own photos, and admins may delete any photo.</p>
+    <p>A safe policy is <b>deny by default</b>. If no rule allows the action, the server refuses it. A new endpoint then stays closed until someone writes a rule that opens it.</p>
+    <div class="analogy">At an airport, the passport check proves who you are. That is authentication. Your boarding pass decides which plane you may board. That is authorization. The analogy stops at timing: the airport checks you once, while HTTP is stateless, so an API checks both on every request.</div>
+    <div class="mixup">
+      <p><b>Common mix-up</b></p>
+      <p>"The token is valid, so the request is allowed."</p>
+      <p>A valid token only tells the server who is asking. The server still has to check that this user may touch this object. OWASP ranks the missing check, called <b>broken object level authorization</b>, first on its 2023 list of API risks.</p>
+    </div>
+  </section>
+
+  <section class="part" id="how">
+    <h2><span class="num">2</span>How an API checks a request</h2>
+    <figure class="stepper" data-stepper>
+      <svg class="diagram" viewBox="0 0 340 300" role="img" aria-label="A request passes an authentication check, then an authorization check, then reaches the handler. The first check fails with 401, the second with 403.">
+        <defs>
+          <marker id="tip-how" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="tip" d="M0 0 10 5 0 10z"/></marker>
+        </defs>
+        <g data-s="1">
+          <rect class="box" x="10" y="6" width="210" height="50"/>
+          <text x="115" y="27" text-anchor="middle">GET /photos/42</text>
+          <text class="soft" x="115" y="45" text-anchor="middle">token for ana</text>
+        </g>
+        <g data-s="2">
+          <path class="edge" d="M115 56V82" marker-end="url(#tip-how)"/>
+          <rect class="box" x="10" y="84" width="210" height="50"/>
+          <text x="115" y="105" text-anchor="middle">Authentication</text>
+          <text class="soft" x="115" y="123" text-anchor="middle">Is the token valid?</text>
+        </g>
+        <g data-s="3">
+          <path class="edge" d="M220 109H262" marker-end="url(#tip-how)"/>
+          <text class="soft" x="241" y="100" text-anchor="middle">no</text>
+          <rect class="box fail" x="264" y="88" width="72" height="42"/>
+          <text class="bad" x="300" y="114" text-anchor="middle">401</text>
+        </g>
+        <g data-s="4">
+          <path class="edge" d="M115 134V160" marker-end="url(#tip-how)"/>
+          <text class="soft" x="123" y="151">yes, user ana</text>
+          <rect class="box" x="10" y="162" width="210" height="50"/>
+          <text x="115" y="183" text-anchor="middle">Authorization</text>
+          <text class="soft" x="115" y="201" text-anchor="middle">May ana read 42?</text>
+        </g>
+        <g data-s="5">
+          <path class="edge" d="M220 187H262" marker-end="url(#tip-how)"/>
+          <text class="soft" x="241" y="178" text-anchor="middle">no</text>
+          <rect class="box fail" x="264" y="166" width="72" height="42"/>
+          <text class="bad" x="300" y="192" text-anchor="middle">403</text>
+        </g>
+        <g data-s="6">
+          <path class="edge" d="M115 212V238" marker-end="url(#tip-how)"/>
+          <text class="soft" x="123" y="229">yes, she owns it</text>
+          <rect class="box" x="10" y="240" width="210" height="50"/>
+          <text x="115" y="261" text-anchor="middle">Photo handler</text>
+          <text class="soft" x="115" y="279" text-anchor="middle">reads photo 42</text>
+          <path class="edge" d="M220 265H262" marker-end="url(#tip-how)"/>
+          <rect class="box pass" x="264" y="244" width="72" height="42"/>
+          <text class="ok" x="300" y="270" text-anchor="middle">200</text>
+        </g>
+      </svg>
+      <ol class="captions">
+        <li>Ana's phone sends GET /photos/42 with her access token in the Authorization header.</li>
+        <li>Authentication checks the token's signature and expiry, and learns that the caller is the user ana.</li>
+        <li>A missing, expired or forged token stops here with 401 Unauthorized, because the server does not know who is asking.</li>
+        <li>Authorization looks up photo 42 and checks the policy. Owners may read their own photos.</li>
+        <li>If photo 42 were Ben's, the request would stop here with 403 Forbidden, or with 404 to hide that the photo exists.</li>
+        <li>Both checks passed, so the handler reads photo 42 and returns 200 OK.</li>
+      </ol>
+      <figcaption>Every request passes authentication first and authorization second, and each check has its own failure code.</figcaption>
+    </figure>
+
+    <h3>Two refused requests to the photo API</h3>
+    <p>The first request carries no credential. Authentication fails at step 3, and the server names the scheme it accepts in the <code>WWW-Authenticate</code> header, which RFC 9110 requires on every 401.</p>
+<pre class="request"><code>GET /photos/42 HTTP/1.1
+Host: api.snapshelf.example</code></pre>
+<pre class="response"><code>HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Bearer realm="snapshelf"</code></pre>
+    <p>The second request carries Ben's valid token. Authentication passes, and authorization fails at step 5, because Ben neither owns photo 42 nor holds the admin role.</p>
+<pre class="request"><code>DELETE /photos/42 HTTP/1.1
+Host: api.snapshelf.example
+Authorization: Bearer eyJhbGciOiJSUzI1NiJ9...</code></pre>
+<pre class="response"><code>HTTP/1.1 403 Forbidden</code></pre>
+    <p>The handler runs the two checks in that order. The <code>can</code> function holds the policy, and its last line is deny by default.</p>
+<pre><code>app.delete('/photos/:id', async (req, res) =&gt; {
+  const user = await authenticate(req);   // step 2
+  if (!user) return res.status(401)
+    .set('WWW-Authenticate', 'Bearer').end();
+  const photo = await db.photos.find(req.params.id);
+  if (!photo) return res.status(404).end();
+  if (!can(user, 'delete', photo))         // step 4
+    return res.status(403).end();
+  await db.photos.remove(photo.id);
+  res.status(204).end();
+});
+
+function can(user, action, photo) {
+  if (user.role === 'admin') return true;
+  if (photo.ownerId === user.id) return true;
+  return false;
+}</code></pre>
+
+    <h3>The two checks side by side</h3>
+    <table>
+      <tr><th></th><th>Authentication</th><th>Authorization</th></tr>
+      <tr><th>Question</th><td>Who is asking?</td><td>May they do this to this resource?</td></tr>
+      <tr><th>Input</th><td>A credential: password, cookie or token</td><td>The identity, the action, the resource and the policy</td></tr>
+      <tr><th>Runs</th><td>Once per request, first</td><td>For each object the request touches</td></tr>
+      <tr><th>Fails with</th><td>401 Unauthorized</td><td>403 Forbidden, or 404 to hide the resource</td></tr>
+      <tr><th>Fix</th><td>Log in again or refresh the token</td><td>Get the permission. Logging in again does not help.</td></tr>
+    </table>
+    <p>The name "401 Unauthorized" is old and misleading. A 401 means the server could not authenticate the caller.</p>
+  </section>
+
+  <section class="part" id="try">
+    <h2><span class="num">3</span>Simulate the checks in a photo API</h2>
+    <p>Pick a caller and an action, then send the request. The trace shows which check passed, which refused, and the response. Photo 42 belongs to Ana.</p>
+    <ol class="todo">
+      <li>Predict, then check: what status code does Ben get when he deletes photo 42? Send it.</li>
+      <li>Send a request with no token, then with an expired token. Which check stops each one?</li>
+      <li>Turn on "Skip the ownership check", then send Ben's delete again.</li>
+    </ol>
+    <section class="card">
+      <div class="photo" id="photo"><span>Photo 42, owner ana</span><span id="photo-state">stored</span></div>
+      <div class="ctl">
+        <b>Caller</b>
+        <div class="seg" id="callers">
+          <button type="button" data-caller="none">No token</button>
+          <button type="button" data-caller="expired">Expired token</button>
+          <button type="button" data-caller="ana" aria-pressed="true">Ana, owner</button>
+          <button type="button" data-caller="ben">Ben, user</button>
+          <button type="button" data-caller="cleo">Cleo, admin</button>
+        </div>
+      </div>
+      <div class="ctl">
+        <b>Action</b>
+        <div class="seg" id="actions">
+          <button type="button" data-action="read" aria-pressed="true">GET /photos/42</button>
+          <button type="button" data-action="delete">DELETE /photos/42</button>
+        </div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="bug"> Skip the ownership check</label>
+      <div class="row">
+        <button type="button" class="primary" id="send">Send request</button>
+        <button type="button" id="reset">Restore photo 42</button>
+      </div>
+      <ol class="trace" id="trace" aria-label="Request trace">
+        <li class="skip">Authentication <span>waiting</span></li>
+        <li class="skip">Authorization <span>waiting</span></li>
+        <li class="skip">Response <span>waiting</span></li>
+      </ol>
+    </section>
+    <div class="verdict" id="verdict" aria-live="polite"><b>No request sent yet</b>Pick Ben and DELETE, predict the status code, then tap Send request.</div>
+  </section>
+
+  <section class="part" id="check">
+    <h2><span class="num">4</span>Practice questions</h2>
+    <details>
+      <summary>Which check runs first, and what question does each one answer?</summary>
+      <p>Authentication runs first and answers "who is asking?". Authorization runs second and answers "may this caller do this to this resource?". Authorization needs the identity that authentication produced.</p>
+    </details>
+    <details>
+      <summary>Why does a 403 tell the client that logging in again will not help?</summary>
+      <p>The server already accepted the credential and knows who the caller is. The policy refused that identity, so a fresh login brings the same identity and the same answer.</p>
+    </details>
+    <details>
+      <summary>An invoice API verifies the token, then runs <code>SELECT * FROM invoices WHERE id = $1</code> with the id from the URL. What is missing?</summary>
+      <p>The object level authorization check. Any customer can change the id and read another customer's invoice. Add the owner to the query, such as <code>AND customer_id = $2</code>, or check the owner before returning the row.</p>
+    </details>
+    <details>
+      <summary>Is OAuth 2.0 a login protocol?</summary>
+      <p>No. OAuth 2.0 lets a user grant an app limited access to an API, which is authorization. OpenID Connect adds an ID token on top of it, and the ID token tells the app who logged in, which is authentication.</p>
+    </details>
+    <details>
+      <summary>An access token carries the scope <code>photos:delete</code>. Can Ben now delete Ana's photo?</summary>
+      <p>Not by itself. The scope limits what the app may do on Ben's behalf. The API still checks its own policy for photo 42, and that policy says only the owner or an admin may delete it.</p>
+    </details>
+    <h3 class="after-q">What to remember</h3>
+    <ul class="remember">
+      <li>Authentication finds out who is asking. Authorization decides what they may do.</li>
+      <li>A failed authentication returns 401. A failed authorization returns 403, or 404 to hide the resource.</li>
+      <li>A valid token is no permission. Check every object the request reads or changes.</li>
+      <li>Deny by default. If no rule allows the action, refuse it.</li>
+    </ul>
+  </section>
+
+  <section class="part" id="sources">
+    <h2>Sources and further reading</h2>
+    <ol class="sources">
+      <li><a href="https://www.cloudflare.com/learning/access-management/authn-vs-authz/" target="_blank" rel="noopener">Authn vs. authz: How are they different?</a><span class="pub">Cloudflare Learning Center</span><span class="note">A short beginner page on the two checks and the common ways to do each.</span></li>
+      <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/authentication" target="_blank" rel="noopener">HTTP authentication</a><span class="pub">MDN Web Docs</span><span class="note">How the 401 challenge, the WWW-Authenticate header and the Authorization header fit together.</span></li>
+      <li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html" target="_blank" rel="noopener">Authorization Cheat Sheet</a><span class="pub">OWASP</span><span class="note">Deny by default, least privilege and checking permissions on every request.</span></li>
+      <li><a href="https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/" target="_blank" rel="noopener">API1:2023 Broken Object Level Authorization</a><span class="pub">OWASP API Security Project</span><span class="note">The top API risk, with attack examples and how to prevent it.</span></li>
+      <li><a href="https://www.rfc-editor.org/rfc/rfc9110.txt" target="_blank" rel="noopener">RFC 9110: HTTP Semantics</a><span class="pub">IETF</span><span class="note">Sections 11 and 15.5 define the authentication headers, 401 and 403.</span></li>
+    </ol>
+  </section>
+</main>
+<script>
+  function applyThemeFromQuery() {
+    const theme = new URLSearchParams(location.search).get('theme');
+    if (theme === 'dark' || theme === 'light') document.documentElement.dataset.theme = theme;
+  }
+  applyThemeFromQuery();
+
+  // Inside the site's frame: the site page shows the title and references, sizes the frame to fit,
+  // and scrolls itself when a contents link is tapped, so the reader sees one scrollbar.
+  function embedInSite() {
+    if (window.self === window.top) return;
+    document.documentElement.dataset.embedded = 'true';
+    const post = (msg) => window.parent.postMessage(msg, '*');
+    const report = () => post({ type: 'ag:height', height: Math.ceil(document.body.getBoundingClientRect().height) });
+    new ResizeObserver(report).observe(document.body);
+    window.addEventListener('load', report);
+    document.addEventListener('click', (e) => {
+      const a = e.target.closest('a[href^="#"]');
+      const id = a && a.getAttribute('href').slice(1);
+      const target = id && document.getElementById(id);
+      if (!target) return;
+      e.preventDefault();
+      post({ type: 'ag:scroll', top: Math.round(target.getBoundingClientRect().top + window.scrollY) });
+    });
+  }
+  embedInSite();
+
+  // Guess first: reveal the answer after one tap.
+  document.querySelectorAll('[data-guess]').forEach((box) => {
+    const answer = box.querySelector('.answer');
+    const options = box.querySelectorAll('.options button');
+    options.forEach((btn) => btn.addEventListener('click', () => {
+      options.forEach((b) => {
+        b.setAttribute('aria-pressed', String(b === btn));
+        b.classList.toggle('right', b.hasAttribute('data-correct'));
+        b.classList.toggle('wrong', b === btn && !b.hasAttribute('data-correct'));
+      });
+      if (!answer.dataset.text) answer.dataset.text = answer.textContent;
+      answer.textContent = (btn.hasAttribute('data-correct') ? 'You guessed right. ' : 'Not this time. ') + answer.dataset.text;
+      answer.hidden = false;
+    }));
+  });
+
+  // Steppers: Back and Next walk the figure one step at a time.
+  document.querySelectorAll('[data-stepper]').forEach((fig) => {
+    const caps = [...fig.querySelectorAll('ol.captions li')];
+    const total = caps.length;
+    if (!total) return;
+    const bar = document.createElement('div');
+    bar.className = 'step-controls';
+    bar.innerHTML = '<button type="button" data-go="-1">Back</button><span class="count" aria-live="polite"></span><button type="button" class="primary" data-go="1">Next</button>';
+    fig.querySelector('ol.captions').before(bar);
+    const [back, count, next] = bar.children;
+    let step = 1;
+    const show = () => {
+      fig.querySelectorAll('[data-s]').forEach((el) => {
+        const s = Number(el.dataset.s);
+        el.classList.toggle('off', s > step);
+        el.classList.toggle('now', s === step);
+      });
+      fig.querySelectorAll('[data-only]').forEach((el) => {
+        el.classList.toggle('off', !el.dataset.only.split(' ').map(Number).includes(step));
+      });
+      caps.forEach((li, i) => li.classList.toggle('current', i === step - 1));
+      count.textContent = `Step ${step} of ${total}`;
+      back.disabled = step === 1;
+      next.textContent = step === total ? 'Start again' : 'Next';
+    };
+    back.addEventListener('click', () => { step = Math.max(1, step - 1); show(); });
+    next.addEventListener('click', () => { step = step === total ? 1 : step + 1; show(); });
+    fig.classList.add('js');
+    show();
+  });
+
+  // Linked terms: tapping <button class="ref" data-ref="x"> lights every element with data-ref="x".
+  document.querySelectorAll('button.ref[data-ref]').forEach((btn) => btn.addEventListener('click', () => {
+    const on = !btn.classList.contains('lit');
+    document.querySelectorAll('.lit').forEach((el) => el.classList.remove('lit'));
+    if (on) document.querySelectorAll(`[data-ref~="${btn.dataset.ref}"]`).forEach((el) => el.classList.add('lit'));
+  }));
+
+  // Simulation: a photo API that runs authentication, then authorization.
+  (function () {
+    const users = { ana: { id: 'ana', role: 'user' }, ben: { id: 'ben', role: 'user' }, cleo: { id: 'cleo', role: 'admin' } };
+    const state = { caller: 'ana', action: 'read', bug: false, stored: true };
+    const traceEl = document.getElementById('trace');
+    const verdict = document.getElementById('verdict');
+    const photoEl = document.getElementById('photo');
+    const photoState = document.getElementById('photo-state');
+
+    function pick(groupId, attr, key) {
+      document.getElementById(groupId).addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        state[key] = btn.dataset[attr];
+        document.querySelectorAll('#' + groupId + ' button').forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+      });
+    }
+    pick('callers', 'caller', 'caller');
+    pick('actions', 'action', 'action');
+    document.getElementById('bug').addEventListener('change', (e) => { state.bug = e.target.checked; });
+
+    function run(s) {
+      const verb = s.action === 'read' ? 'read' : 'delete';
+      if (s.caller === 'none') return {
+        authn: ['fail', 'no credential'], authz: ['skip', 'not reached'], code: '401 Unauthorized', tone: 'warn',
+        title: '401 Unauthorized',
+        text: 'Authentication failed. The request has no credential, so the API cannot tell who is asking, and authorization never ran.' };
+      if (s.caller === 'expired') return {
+        authn: ['fail', 'token expired'], authz: ['skip', 'not reached'], code: '401 Unauthorized', tone: 'warn',
+        title: '401 Unauthorized',
+        text: 'Authentication failed. The token\'s expiry time has passed, so the API no longer trusts it. A fresh login or a refresh token fixes this one.' };
+      const user = users[s.caller];
+      const authn = ['pass', 'user ' + user.id];
+      if (!s.stored) return {
+        authn, authz: ['skip', 'no photo to check'], code: '404 Not Found', tone: 'warn',
+        title: '404 Not Found',
+        text: 'Authentication passed, but photo 42 was deleted, so the handler has nothing to ' + verb + '. Tap Restore photo 42 to try again.' };
+      const isOwner = user.id === 'ana';
+      const isAdmin = user.role === 'admin';
+      const code = s.action === 'read' ? '200 OK' : '204 No Content';
+      if (isOwner || isAdmin) return {
+        authn, authz: ['pass', isOwner ? 'owner' : 'admin role'], code, tone: 'good', done: s.action === 'delete',
+        title: code,
+        text: 'Authentication found ' + user.id + ', and authorization allowed the ' + verb + ' because ' +
+          (isOwner ? 'ana owns photo 42.' : 'the admin role may ' + verb + ' any photo.') };
+      if (s.bug) return {
+        authn, authz: ['bug', 'skipped'], code, tone: 'bad', done: s.action === 'delete',
+        title: code + ', and that is the bug',
+        text: 'Ben could ' + verb + ' Ana\'s photo. The API checked who Ben is and stopped there. This is broken object level authorization, the first risk on the OWASP API Security Top 10 for 2023.' };
+      return {
+        authn, authz: ['fail', 'not owner, not admin'], code: '403 Forbidden', tone: 'warn',
+        title: '403 Forbidden',
+        text: 'Authentication passed, because ben is a known user. Authorization refused, because photo 42 belongs to ana and ben is no admin. No rule allows it, so the API denies by default. Logging in again would not help.' };
+    }
+
+    function row(label, pair) {
+      const li = document.createElement('li');
+      li.className = pair[0];
+      li.textContent = label + ' ';
+      const span = document.createElement('span');
+      span.textContent = pair[1];
+      li.append(span);
+      return li;
+    }
+
+    function drawPhoto() {
+      photoEl.classList.toggle('gone', !state.stored);
+      photoState.textContent = state.stored ? 'stored' : 'deleted';
+    }
+
+    document.getElementById('send').addEventListener('click', () => {
+      const r = run(state);
+      if (r.done) state.stored = false;
+      const ok = r.tone === 'good' || r.tone === 'bad';
+      traceEl.replaceChildren(row('Authentication', r.authn), row('Authorization', r.authz), row('Response', [ok ? (r.tone === 'bad' ? 'bug' : 'pass') : 'fail', r.code]));
+      verdict.className = 'verdict ' + r.tone;
+      verdict.innerHTML = '';
+      const b = document.createElement('b');
+      b.textContent = r.title;
+      verdict.append(b, document.createTextNode(r.text));
+      drawPhoto();
+    });
+
+    document.getElementById('reset').addEventListener('click', () => {
+      state.stored = true;
+      drawPhoto();
+      verdict.className = 'verdict';
+      verdict.innerHTML = '<b>Photo 42 restored</b>Photo 42 is back, and ana still owns it.';
+    });
+  })();
+</script>
+</body>
+</html>

@@ -48,7 +48,10 @@ sections:
   - id: authentication
     title: "Authentication"
     nodes:
-      - { id: authn-authz, title: "Authentication and authorization" }
+      - id: authn-authz
+        title: "Authentication and authorization"
+        artifacts: [authentication-and-authorization]
+        terms: [authentication, authorization, credential, deny-by-default, broken-object-level-authorization]
       - { id: password-hashing, title: "Password hashing" }
       - { id: sessions-cookies, title: "Sessions and cookies" }
       - id: tokens-jwt
@@ -59,7 +62,10 @@ sections:
         title: "OAuth 2.0 and OpenID Connect"
         artifacts: [oauth-and-openid-connect]
         terms: [oauth-2, openid-connect, authorization-server, access-token, scope, id-token, authorization-code-flow, pkce]
-      - { id: access-models, title: "Roles and permissions", level: extra }
+      - id: access-models
+        title: "Roles and permissions"
+        level: extra
+        terms: [permission]
   - id: caching
     title: "Caching"
     nodes:
